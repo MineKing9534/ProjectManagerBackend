@@ -20,6 +20,11 @@ fun UserEndpoints() {
 		json(main.users.getAllIds())
 	} }
 
+	get("csv") { with(it) {
+		checkAuthorization(admin = true)
+		result(main.users.exportCSV())
+	} }
+
 	post("resolve") { with(it) {
 		val auth = checkAuthorization()
 
@@ -35,7 +40,7 @@ fun UserEndpoints() {
 	} }
 
 	post { with(it) {
-		data class Request(val firstName: String, val lastName: String, val email: String, val password: String)
+		data class Request(val firstName: String, val lastName: String, val email: String)
 		val request = bodyAsClass<Request>()
 
 		if (main.users.getByEmail(request.email) != null) throw ErrorResponse(ErrorResponseType.USER_ALREADY_EXISTS)

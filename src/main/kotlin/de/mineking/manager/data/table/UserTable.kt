@@ -2,6 +2,9 @@ package de.mineking.manager.data.table
 
 import de.mineking.databaseutils.Where
 import de.mineking.manager.data.User
+import org.jdbi.v3.core.kotlin.withHandleUnchecked
+import org.postgresql.copy.CopyManager
+import org.postgresql.core.BaseConnection
 
 @JvmDefaultWithCompatibility
 interface UserTable : IdentifiableTable<User> {
@@ -13,4 +16,16 @@ interface UserTable : IdentifiableTable<User> {
 		email = email,
 		password = password
 	))
+
+	fun exportCSV(): String = manager.driver.withHandleUnchecked {
+		var result = ""
+		val copy = CopyManager(it.connection as BaseConnection).copyOut("""copy (select id as "ID", firstname as "Vorname", lastname as "Nachname", email as "E-Mail" from users) to stdout delimiter ',' csv header""")
+
+		while(true) {
+			val line = copy.readFromCopy() ?: break
+			result += line.decodeToString()
+		}
+
+		result
+	}
 }
