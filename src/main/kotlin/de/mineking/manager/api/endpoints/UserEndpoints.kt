@@ -7,10 +7,12 @@ import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.data.MemberType
 import de.mineking.manager.data.ParentType
-import de.mineking.manager.main.EmailClient
 import de.mineking.manager.main.hashPassword
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
+
+fun String.isValidName(): Boolean = matches("[a-zA-Zäöüß]{2,}".toRegex())
+fun String.isValidEmail(): Boolean = matches( "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$".toRegex())
 
 fun UserEndpoints() {
 	get {
@@ -51,9 +53,9 @@ fun UserEndpoints() {
 
 			if (main.users.getByEmail(request.email) != null) throw ErrorResponse(ErrorResponseType.USER_ALREADY_EXISTS)
 
-			if (request.firstName.length < 2) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
-			if (request.lastName.length < 2) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
-			if (!EmailClient.isValidEmail(request.email)) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
+			if (!request.firstName.isValidName()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
+			if (!request.lastName.isValidName()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
+			if (!request.email.isValidEmail()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
 
 			val id = auth.jwt.subject!!
 			val type = auth.jwt.getClaim("type")!!.asString()
@@ -130,6 +132,9 @@ fun UserEndpoints() {
 
 				val target = getTarget()
 				val user = main.users.getById(target) ?: throw ErrorResponse(ErrorResponseType.USER_NOT_FOUND)
+
+				if (request.firstName != null && !request.firstName.isValidName()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
+				if (request.lastName != null && !request.lastName.isValidName()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
 
 				user.copy(
 					firstName = request.firstName ?: user.firstName,
