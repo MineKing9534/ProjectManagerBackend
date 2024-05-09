@@ -20,10 +20,12 @@ fun UserEndpoints() {
 		}
 	}
 
-	get("csv") {
+	post("csv") {
 		with(it) {
 			checkAuthorization(admin = true)
 			result(main.users.exportCSV())
+				.header("content-type", "csv")
+				.header("content-disposition", "inline; filename=\"Nutzerliste.csv\"");
 		}
 	}
 

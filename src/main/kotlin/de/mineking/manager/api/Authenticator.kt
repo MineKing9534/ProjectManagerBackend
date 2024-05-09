@@ -49,7 +49,7 @@ class Authenticator(private val main: Main) {
 		.withClaim("type", type.name)
 		.sign(algorithm)
 
-	fun checkAuthorization(ctx: Context, type: TokenType = TokenType.USER) = checkAuthorization(ctx.header("Authorization"), type = type)
+	fun checkAuthorization(ctx: Context, type: TokenType = TokenType.USER) = checkAuthorization(ctx.header("Authorization") ?: ctx.formParam("Authorization"), type = type)
 
 	fun checkAuthorization(token: String?, type: TokenType = TokenType.USER): AuthorizationInfo {
 		return type.create(
