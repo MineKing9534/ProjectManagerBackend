@@ -135,6 +135,8 @@ fun UserEndpoints() {
 					firstName = request.firstName ?: user.firstName,
 					lastName = request.lastName ?: user.lastName
 				).update()
+
+				json(user)
 			}
 		}
 
