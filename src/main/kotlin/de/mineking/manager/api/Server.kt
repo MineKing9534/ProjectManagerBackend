@@ -45,7 +45,7 @@ fun Context.checkSuperUser() {
 }
 
 class Server(private val main: Main) {
-	private val server : Javalin = Javalin.create { config ->
+	private val server: Javalin = Javalin.create { config ->
 		config.showJavalinBanner = false
 
 		config.http.defaultContentType = "text/json"
@@ -53,7 +53,7 @@ class Server(private val main: Main) {
 
 		config.bundledPlugins.enableCors { cors -> cors.addRule { it.anyHost() } }
 
-		config.jsonMapper(object: JsonMapper {
+		config.jsonMapper(object : JsonMapper {
 			override fun <T : Any> fromJsonString(json: String, targetType: Type): T {
 				if (json.isBlank()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
 				return JSON.fromJson(json, targetType)

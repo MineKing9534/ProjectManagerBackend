@@ -1,12 +1,14 @@
 package de.mineking.manager.main
 
-import com.google.gson.*
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.TypeAdapter
+import com.google.gson.TypeAdapterFactory
 import com.google.gson.reflect.TypeToken
 import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonWriter
 import com.password4j.Password
 import de.mineking.databaseutils.DatabaseManager
-import de.mineking.databaseutils.Where
 import de.mineking.javautils.ID
 import de.mineking.manager.api.Authenticator
 import de.mineking.manager.api.Server
@@ -66,7 +68,7 @@ fun main() {
 
 val DEFAULT_ID = ID.generate()
 val JSON: Gson = GsonBuilder()
-	.registerTypeAdapter(ID::class.java, object: TypeAdapter<ID>() {
+	.registerTypeAdapter(ID::class.java, object : TypeAdapter<ID>() {
 		override fun write(writer: JsonWriter?, value: ID?) {
 			writer?.value(value?.asString())
 		}
@@ -76,7 +78,7 @@ val JSON: Gson = GsonBuilder()
 			return if (id == null) null else ID.decode(id)
 		}
 	})
-	.registerTypeAdapterFactory(object: TypeAdapterFactory {
+	.registerTypeAdapterFactory(object : TypeAdapterFactory {
 		override fun <T : Any> create(gson: Gson, type: TypeToken<T>): TypeAdapter<T>? {
 			val delegate = gson.getDelegateAdapter(this, type)
 

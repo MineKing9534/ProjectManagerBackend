@@ -18,7 +18,7 @@ fun OEmbedEndpoint(ctx: Context) = with(ctx) {
 	url = url.replace(main.config.url, "")
 
 	json(
-		if(url.matches("/invite\\?token=.*".toRegex()))  {
+		if (url.matches("/invite\\?token=.*".toRegex())) {
 			val token = url.substring("/join?token=".length)
 			val auth = main.authenticator.checkAuthorization(token, type = TokenType.INVITE)
 
@@ -26,7 +26,6 @@ fun OEmbedEndpoint(ctx: Context) = with(ctx) {
 			val type = auth.jwt.getClaim("type")!!.asString()
 
 			TODO("read object, send response")
-		}
-		else Response(provider_name = main.config.info.provider, author_name = main.config.info.author, title = main.config.info.title)
+		} else Response(provider_name = main.config.info.provider, author_name = main.config.info.author, title = main.config.info.title)
 	)
 }

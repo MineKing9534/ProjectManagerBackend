@@ -6,7 +6,7 @@ import de.mineking.manager.data.type.Identifiable
 import de.mineking.manager.main.Main
 import org.jdbi.v3.core.kotlin.withHandleUnchecked
 
-interface IdentifiableTable<T: Identifiable> : Table<T> {
+interface IdentifiableTable<T : Identifiable> : Table<T> {
 	val main: Main get() = manager.getData<Main>("main")
 
 	fun getAll(): List<T> = selectAll()

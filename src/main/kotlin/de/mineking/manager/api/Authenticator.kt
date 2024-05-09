@@ -52,26 +52,30 @@ class Authenticator(private val main: Main) {
 	fun checkAuthorization(ctx: Context, type: TokenType = TokenType.USER) = checkAuthorization(ctx.header("Authorization"), type = type)
 
 	fun checkAuthorization(token: String?, type: TokenType = TokenType.USER): AuthorizationInfo {
-		return type.create(main,
-			token.verify(when(type) {
-				TokenType.USER -> userVerifier
-				TokenType.INVITE -> inviteVerifier
-				TokenType.EMAIL -> emailVerifier
-			})
+		return type.create(
+			main,
+			token.verify(
+				when (type) {
+					TokenType.USER -> userVerifier
+					TokenType.INVITE -> inviteVerifier
+					TokenType.EMAIL -> emailVerifier
+				}
+			)
 		)
 	}
 
 	private fun String?.verify(verifier: JWTVerifier): DecodedJWT {
-		if(this.isNullOrBlank()) throw ErrorResponse(ErrorResponseType.MISSING_TOKEN);
+		if (this.isNullOrBlank()) throw ErrorResponse(ErrorResponseType.MISSING_TOKEN)
 
 		try {
-			return verifier.verify(this);
+			return verifier.verify(this)
 		} catch (e: Exception) {
-			when(e) {
+			when (e) {
 				is TokenExpiredException -> throw ErrorResponse(ErrorResponseType.TOKEN_EXPIRED)
 				is SignatureVerificationException,
 				is InvalidClaimException,
 				is JWTDecodeException -> throw ErrorResponse(ErrorResponseType.INVALID_TOKEN)
+
 				else -> throw InternalServerErrorResponse(e.message ?: "")
 			}
 		}

@@ -27,10 +27,12 @@ interface ParticipantTable : Table<Participant> {
 		}
 	}
 
-	fun leave(member: ID, parent: ID): Boolean = delete(Where.allOf(
-		Where.equals("member", member),
-		Where.equals("parent", parent)
-	)) > 0
+	fun leave(member: ID, parent: ID): Boolean = delete(
+		Where.allOf(
+			Where.equals("member", member),
+			Where.equals("parent", parent)
+		)
+	) > 0
 
 	fun getParticipants(id: String): List<Participant> = selectMany(Where.equals("parent", id))
 	fun getParticipantUsers(id: String, teams: Boolean = false): List<User> = main.users.getByIds(getParticipantUserIds(id, teams))

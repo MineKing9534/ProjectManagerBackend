@@ -5,7 +5,7 @@ import de.mineking.databaseutils.DataClass
 import de.mineking.javautils.ID
 import de.mineking.manager.data.type.Identifiable
 import de.mineking.manager.main.Main
-import java.util.Objects
+import java.util.*
 
 data class User(
 	@Transient val main: Main,

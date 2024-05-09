@@ -10,18 +10,21 @@ import org.postgresql.core.BaseConnection
 interface UserTable : IdentifiableTable<User> {
 	fun getByEmail(email: String): User? = selectOne(Where.equals("email", email)).orElse(null)
 
-	fun create(firstName: String, lastName: String, email: String, password: String): User = insert(User(main,
-		firstName = firstName,
-		lastName = lastName,
-		email = email,
-		password = password
-	))
+	fun create(firstName: String, lastName: String, email: String, password: String): User = insert(
+		User(
+			main,
+			firstName = firstName,
+			lastName = lastName,
+			email = email,
+			password = password
+		)
+	)
 
 	fun exportCSV(): String = manager.driver.withHandleUnchecked {
 		var result = ""
 		val copy = CopyManager(it.connection as BaseConnection).copyOut("""copy (select id as "ID", firstname as "Vorname", lastname as "Nachname", email as "E-Mail" from users) to stdout delimiter ',' csv header""")
 
-		while(true) {
+		while (true) {
 			val line = copy.readFromCopy() ?: break
 			result += line.decodeToString()
 		}
