@@ -7,7 +7,7 @@ import de.mineking.manager.main.verifyPassword
 import io.javalin.http.Context
 import io.javalin.http.bodyAsClass
 
-fun LoginEndpoint(ctx: Context) { with(ctx) {
+fun LoginEndpoint(ctx: Context) = with(ctx) {
 	data class Request(val email: String, val password: String)
 	data class Response(val token: String)
 
@@ -17,4 +17,4 @@ fun LoginEndpoint(ctx: Context) { with(ctx) {
 	if (!verifyPassword(user.password, request.password)) throw ErrorResponse(ErrorResponseType.WRONG_PASSWORD)
 
 	json(Response(main.authenticator.generateUserToken(user)))
-} }
+}

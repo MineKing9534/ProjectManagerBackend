@@ -2,14 +2,12 @@ package de.mineking.manager.api.endpoints
 
 import de.mineking.databaseutils.exception.ConflictException
 import de.mineking.javautils.ID
-import de.mineking.manager.api.checkAuthorization
-import de.mineking.manager.api.checkSuperUser
+import de.mineking.manager.api.*
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
-import de.mineking.manager.api.getTarget
-import de.mineking.manager.api.main
 import de.mineking.manager.data.MemberType
 import de.mineking.manager.data.ParentType
+import de.mineking.manager.main.EmailClient
 import de.mineking.manager.main.hashPassword
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
@@ -26,26 +24,48 @@ fun UserEndpoints() {
 	} }
 
 	post("resolve") { with(it) {
-		val auth = checkAuthorization()
+		checkAuthorization(admin = true)
 
 		data class Request(val ids: List<String>)
 		val request = bodyAsClass<Request>()
 
-		val known = main.participants.getParents(auth.user.id!!.asString()).flatMap { main.participants.getParticipantUserIds(it.parent.asString()) }
-
-		json(main.users.getByIds(
-			request.ids
-				.filter { auth.user.admin || it in known }
-		))
+		json(main.users.getByIds(request.ids))
 	} }
 
 	post { with(it) {
+		val auth = checkAuthorization(type = TokenType.INVITE)
+
 		data class Request(val firstName: String, val lastName: String, val email: String)
 		val request = bodyAsClass<Request>()
 
 		if (main.users.getByEmail(request.email) != null) throw ErrorResponse(ErrorResponseType.USER_ALREADY_EXISTS)
 
+		if (request.firstName.length < 2) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
+		if (request.lastName.length < 2) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
+		if (!EmailClient.isValidEmail(request.email)) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
+
+		val id = auth.jwt.subject!!
+		val type = auth.jwt.getClaim("type")!!.asString()
+
 		TODO("EMAIL verification")
+	} }
+
+	post("verify") { with(it) {
+		val auth = checkAuthorization(type = TokenType.EMAIL)
+
+		data class Request(val password: String)
+		val request = bodyAsClass<Request>()
+
+		val email = auth.jwt.subject
+		val firstName = auth.jwt.getClaim("firstName")!!.asString()
+		val lastName = auth.jwt.getClaim("lastName")!!.asString()
+		val password = request.password
+
+		if (password.length < 8) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
+
+		if (main.users.getByEmail(email) != null) throw ErrorResponse(ErrorResponseType.USER_ALREADY_EXISTS)
+
+		main.users.create(firstName, lastName, email, hashPassword(password))
 	} }
 
 	put { with(it) {
@@ -69,7 +89,7 @@ fun UserEndpoints() {
 			if (id == "@me") id = auth.user.id!!.asString()
 
 			val known = main.participants.getParents(auth.user.id!!.asString()).flatMap { main.participants.getParticipantUserIds(it.parent.asString()) }
-			if (!auth.user.admin && auth.user.id.asString() != id && auth.user.id.asString() !in known) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+			if (!auth.user.admin && auth.user.id!!.asString() != id && auth.user.id!!.asString() !in known) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
 
 			val user = main.users.getById(id) ?: throw ErrorResponse(ErrorResponseType.USER_NOT_FOUND)
 			json(user)

@@ -10,6 +10,7 @@ import com.auth0.jwt.exceptions.TokenExpiredException
 import com.auth0.jwt.interfaces.DecodedJWT
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
+import de.mineking.manager.data.ParentType
 import de.mineking.manager.data.User
 import de.mineking.manager.main.Main
 import io.javalin.http.Context
@@ -27,33 +28,37 @@ class Authenticator(private val main: Main) {
 		.withIssuer("USER")
 		.build()
 
-	val resourceVerifier = JWT.require(algorithm)
+	val inviteVerifier: JWTVerifier = JWT.require(algorithm)
 		.withIssuer("INVITE")
 		.build()
 
-	fun generateUserToken(user: User) = JWT.create()
+	val emailVerifier: JWTVerifier = JWT.require(algorithm)
+		.withIssuer("EMAIL")
+		.build()
+
+	fun generateUserToken(user: User): String = JWT.create()
 		.withIssuer("USER")
 		.withSubject(user.id?.asString())
 		.withClaim("ver", user.hashCode())
 		.withExpiresAt(Instant.now().plus(Duration.ofHours(4)))
 		.sign(algorithm)
 
-	fun generateInviteToken(id: String) = JWT.create()
+	fun generateInviteToken(id: String, type: ParentType): String = JWT.create()
 		.withIssuer("INVITE")
 		.withSubject(id)
+		.withClaim("type", type.name)
 		.sign(algorithm)
 
-	fun checkAuthorization(ctx: Context)  = checkAuthorization(ctx.header("Authorization"))
+	fun checkAuthorization(ctx: Context, type: TokenType = TokenType.USER) = checkAuthorization(ctx.header("Authorization"), type = type)
 
-	fun checkAuthorization(token: String?): AuthorizationInfo {
-		val parsed = token.verify(userVerifier)
-
-		val id = parsed.subject
-		val user = main.users.getById(id) ?: throw ErrorResponse(ErrorResponseType.USER_NOT_FOUND)
-
-		if (parsed.getClaim("ver").asInt() != user.hashCode()) throw ErrorResponse(ErrorResponseType.TOKEN_EXPIRED)
-
-		return AuthorizationInfo(main, user)
+	fun checkAuthorization(token: String?, type: TokenType = TokenType.USER): AuthorizationInfo {
+		return type.create(main,
+			token.verify(when(type) {
+				TokenType.USER -> userVerifier
+				TokenType.INVITE -> inviteVerifier
+				TokenType.EMAIL -> emailVerifier
+			})
+		)
 	}
 
 	private fun String?.verify(verifier: JWTVerifier): DecodedJWT {
@@ -71,4 +76,21 @@ class Authenticator(private val main: Main) {
 			}
 		}
 	}
+}
+
+enum class TokenType {
+	USER {
+		override fun create(main: Main, jwt: DecodedJWT): AuthorizationInfo {
+			val id = jwt.subject
+			val user = main.users.getById(id) ?: throw ErrorResponse(ErrorResponseType.USER_NOT_FOUND)
+
+			if (jwt.getClaim("ver").asInt() != user.hashCode()) throw ErrorResponse(ErrorResponseType.TOKEN_EXPIRED)
+
+			return AuthorizationInfo(main, jwt, user)
+		}
+	},
+	INVITE,
+	EMAIL;
+
+	open fun create(main: Main, jwt: DecodedJWT): AuthorizationInfo = AuthorizationInfo(main, jwt)
 }

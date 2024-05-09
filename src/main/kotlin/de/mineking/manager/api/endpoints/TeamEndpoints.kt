@@ -31,7 +31,7 @@ fun TeamEndpoints() {
 	path("{id}") {
 		before { with(it) {
 			attribute("table", main.teams)
-			attribute("parent", ParentType.TEAM)
+			attribute("type", ParentType.TEAM)
 			attribute("error", ErrorResponseType.TEAM_NOT_FOUND)
 		} }
 

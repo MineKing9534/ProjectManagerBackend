@@ -8,8 +8,7 @@ import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.main.JSON
 import de.mineking.manager.main.Main
 import io.javalin.Javalin
-import io.javalin.apibuilder.ApiBuilder.path
-import io.javalin.apibuilder.ApiBuilder.post
+import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.config.Key
 import io.javalin.http.Context
 import io.javalin.http.HttpResponseException
@@ -22,8 +21,8 @@ import java.lang.reflect.Type
 val MAIN_KEY = Key<Main>("main")
 val Context.main get() = this.appData(MAIN_KEY)
 
-fun Context.checkAuthorization(admin: Boolean = false): AuthorizationInfo {
-	val auth = this.main.authenticator.checkAuthorization(this)
+fun Context.checkAuthorization(admin: Boolean = false, type: TokenType = TokenType.USER): AuthorizationInfo {
+	val auth = this.main.authenticator.checkAuthorization(this, type = type)
 	if (admin && !auth.user.admin) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
 
 	return auth
@@ -67,6 +66,7 @@ class Server(private val main: Main) {
 
 		config.router.apiBuilder {
 			post("login", ::LoginEndpoint)
+			get("oembed", ::OEmbedEndpoint)
 
 			path("meetings", ::MeetingEndpoints)
 			path("skills", ::SkillEndpoints)

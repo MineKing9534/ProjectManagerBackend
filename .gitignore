@@ -40,4 +40,5 @@ bin/
 
 ### Mac OS ###
 .DS_Store
-run
+run_local
+run_production
