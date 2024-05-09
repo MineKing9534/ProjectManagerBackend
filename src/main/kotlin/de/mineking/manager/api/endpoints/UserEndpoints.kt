@@ -94,7 +94,7 @@ fun UserEndpoints() {
 			val request = bodyAsClass<Request>()
 
 			try {
-				main.users.create(request.firstName, request.lastName, request.email, hashPassword(request.password))
+				json(main.users.create(request.firstName, request.lastName, request.email, hashPassword(request.password)))
 			} catch (_: ConflictException) {
 				throw ErrorResponse(ErrorResponseType.USER_ALREADY_EXISTS)
 			}
