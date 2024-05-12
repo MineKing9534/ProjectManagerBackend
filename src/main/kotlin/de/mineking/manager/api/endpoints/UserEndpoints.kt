@@ -7,6 +7,7 @@ import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.data.MemberType
 import de.mineking.manager.data.ParentType
+import de.mineking.manager.data.table.UserTable
 import de.mineking.manager.main.hashPassword
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
@@ -18,7 +19,7 @@ fun UserEndpoints() {
 	get {
 		with(it) {
 			checkAuthorization(admin = true)
-			json(main.users.getAllIds())
+			json(main.users.getAllIds(UserTable.DEFAULT_ORDER))
 		}
 	}
 
@@ -39,7 +40,7 @@ fun UserEndpoints() {
 
 			val request = bodyAsClass<Request>()
 
-			json(main.users.getByIds(request.ids))
+			json(main.users.getByIds(request.ids, UserTable.DEFAULT_ORDER))
 		}
 	}
 
