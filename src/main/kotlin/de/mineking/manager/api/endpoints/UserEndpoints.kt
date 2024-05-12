@@ -37,7 +37,6 @@ fun UserEndpoints() {
 			checkAuthorization(admin = true)
 
 			data class Request(val ids: List<String>)
-
 			val request = bodyAsClass<Request>()
 
 			json(main.users.getByIds(request.ids, UserTable.DEFAULT_ORDER))
