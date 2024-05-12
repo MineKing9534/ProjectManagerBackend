@@ -6,7 +6,7 @@ import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.api.main
 import de.mineking.manager.data.MemberType
-import de.mineking.manager.data.table.IdentifiableTable
+import de.mineking.manager.data.ParentType
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
 
@@ -17,7 +17,8 @@ fun MembersEndpoints() {
 				val auth = checkAuthorization()
 
 				val id = pathParam("id")
-				attribute<IdentifiableTable<*>>("table")?.getById(id) ?: throw ErrorResponse(attribute("error")!!)
+				val type = attribute<ParentType>("type")!!
+				type.table(main).getById(id) ?: throw ErrorResponse(type.error)
 
 				val users = main.participants.getParticipantUserIds(id)
 				if (!auth.user.admin && auth.user.id!!.asString() !in users) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
@@ -31,7 +32,8 @@ fun MembersEndpoints() {
 				val auth = checkAuthorization()
 
 				val id = pathParam("id")
-				val resource = attribute<IdentifiableTable<*>>("table")?.getById(id) ?: throw ErrorResponse(attribute("error")!!)
+				val type = attribute<ParentType>("type")!!
+				val resource = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
 
 				data class Request(val invite: String)
 				if (!auth.user.admin) {
@@ -55,7 +57,8 @@ fun MembersEndpoints() {
 				checkAuthorization(admin = true)
 
 				val id = pathParam("id")
-				val resource = attribute<IdentifiableTable<*>>("table")?.getById(id) ?: throw ErrorResponse(attribute("error")!!)
+				val type = attribute<ParentType>("type")!!
+				val resource = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
 
 				json(main.teams.getTeams(resource.id!!.asString()))
 			}
@@ -66,7 +69,8 @@ fun MembersEndpoints() {
 				checkAuthorization(admin = true)
 
 				val id = pathParam("id")
-				val resource = attribute<IdentifiableTable<*>>("table")?.getById(id) ?: throw ErrorResponse(attribute("error")!!)
+				val type = attribute<ParentType>("type")!!
+				val resource = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
 
 				val memberId = pathParam("member")
 				val member = main.teams.getById(memberId) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
@@ -80,7 +84,8 @@ fun MembersEndpoints() {
 				checkAuthorization(admin = true)
 
 				val id = pathParam("id")
-				val resource = attribute<IdentifiableTable<*>>("table")?.getById(id) ?: throw ErrorResponse(attribute("error")!!)
+				val type = attribute<ParentType>("type")!!
+				val resource = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
 
 				val memberId = pathParam("member")
 				val member = main.teams.getById(memberId) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)

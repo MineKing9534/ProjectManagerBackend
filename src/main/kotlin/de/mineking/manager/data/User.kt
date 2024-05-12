@@ -4,6 +4,7 @@ import de.mineking.databaseutils.Column
 import de.mineking.databaseutils.DataClass
 import de.mineking.javautils.ID
 import de.mineking.manager.data.type.Identifiable
+import de.mineking.manager.main.EmailType
 import de.mineking.manager.main.Main
 import java.util.*
 
@@ -15,11 +16,9 @@ data class User(
 	@Column val lastName: String = "",
 	@Column(unique = true) val email: String = "",
 	@Transient @Column val password: String = "",
-	@Column val skills: List<String> = emptyList()
+	@Column val skills: List<String> = emptyList(),
+	@Column val emailTypes: EnumSet<EmailType> = EnumSet.copyOf(EmailType.entries.filter { it.custom })
 ) : DataClass<User>, Identifiable {
 	override fun getTable() = main.users
-
-	override fun hashCode(): Int {
-		return Objects.hash(email, password)
-	}
+	override fun hashCode(): Int = Objects.hash(email, password)
 }

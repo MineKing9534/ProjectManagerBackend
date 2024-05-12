@@ -1,0 +1,44 @@
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<style>
+		* {
+			font-family: Ubuntu, sans-serif;
+		}
+	</style>
+</head>
+
+<preview>Kontoeinrichtung für Projektverwaltung abschließen</preview>
+
+<body class="bg-light">
+<div class="container">
+	<div class="card my-10">
+		<div class="card-body">
+			<h1 class="h3 mb-2">Kontoeinrichtung abschließen</h1>
+
+			<hr>
+
+			<div class="space-y-3">
+				<h5 class="text-primary">Hallo %name%</h5>
+				<p class="text-gray-700">
+					Verwenden Sie den Link, um die Erstellung des Kontos abzuschließen.
+					Dort kann ein Passwort festgelegt werden. Anschließend werden Sie automatisch zu <b>%target%</b> hinzugefügt.
+				</p>
+			</div>
+
+			<a class="btn btn-primary mt-3" href="%url%">Einrichtung Abschließen</a>
+			<p class="mt-3 text-gray-700">
+				Dieser Link läuft nach <b>15 Minuten</b> ab!
+			</p>
+			<hr>
+
+			<div class="row">
+				${name}<br>
+				Telefon: ${phone}<br>
+				E-Mail: ${email}<br>
+			</div>
+		</div>
+	</div>
+</div>
+</body>
+</html>

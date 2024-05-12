@@ -33,7 +33,7 @@ class Authenticator(private val main: Main) {
 		.build()
 
 	val emailVerifier: JWTVerifier = JWT.require(algorithm)
-		.withIssuer("EMAIL")
+		.withIssuer("VERIFICATION")
 		.build()
 
 	fun generateUserToken(user: User): String = JWT.create()
@@ -47,6 +47,16 @@ class Authenticator(private val main: Main) {
 		.withIssuer("INVITE")
 		.withSubject(id)
 		.withClaim("type", type.name)
+		.sign(algorithm)
+
+	fun generateVerificationToken(firstName: String, lastName: String, email: String, parent: String, parentType: ParentType): String = JWT.create()
+		.withIssuer("VERIFICATION")
+		.withSubject(email)
+		.withClaim("fn", firstName)
+		.withClaim("ln", lastName)
+		.withClaim("pi", parent)
+		.withClaim("pt", parentType.name)
+		.withExpiresAt(Instant.now().plus(Duration.ofMinutes(15)))
 		.sign(algorithm)
 
 	fun checkAuthorization(ctx: Context, type: TokenType = TokenType.USER) = checkAuthorization(ctx.header("Authorization") ?: ctx.formParam("Authorization"), type = type)

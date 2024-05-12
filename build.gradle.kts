@@ -1,5 +1,8 @@
 plugins {
     kotlin("jvm") version "1.9.23"
+
+	idea
+	id("com.github.johnrengelman.shadow") version "7.1.0"
 }
 
 group = "de.mineking"
@@ -39,8 +42,38 @@ tasks.test {
 }
 
 kotlin {
-    jvmToolchain(17)
+	jvmToolchain(17)
 	compilerOptions {
 		freeCompilerArgs.add("-Xjvm-default=all")
 	}
+}
+
+tasks.compileKotlin {
+	dependsOn("compileEmail")
+}
+
+tasks.register<Exec>("compileEmail") {
+	dependsOn("prepareEmail")
+
+	delete(layout.buildDirectory.dir("resources/main/email"))
+	mkdir(layout.buildDirectory.dir("resources/main/email"))
+	commandLine("bootstrap-email", "-p", "build/email/*.html", "-d", "build/resources/main/email")
+}
+
+tasks.register<Copy>("prepareEmail") {
+	delete(layout.buildDirectory.dir("email"))
+
+	from("$projectDir/bootstrap_email_templates") {
+		include("*.html")
+
+		expand(
+			"name" to project.findProperty("NAME"),
+			"phone" to project.findProperty("PHONE"),
+			"email" to project.findProperty("EMAIL")
+		)
+	}
+
+	into(layout.buildDirectory.dir("email"))
+
+	includeEmptyDirs = false
 }

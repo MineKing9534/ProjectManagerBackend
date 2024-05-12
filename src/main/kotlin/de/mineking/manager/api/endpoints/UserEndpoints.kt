@@ -8,12 +8,14 @@ import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.data.MemberType
 import de.mineking.manager.data.ParentType
 import de.mineking.manager.data.table.UserTable
+import de.mineking.manager.main.EmailType
 import de.mineking.manager.main.hashPassword
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
+import java.util.*
 
 fun String.isValidName(): Boolean = matches("^[a-zA-Zäöüß]{2,}$".toRegex())
-fun String.isValidEmail(): Boolean = matches( "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$".toRegex())
+fun String.isValidEmail(): Boolean = matches("^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$".toRegex())
 
 fun UserEndpoints() {
 	get {
@@ -28,7 +30,7 @@ fun UserEndpoints() {
 			checkAuthorization(admin = true)
 			result(main.users.exportCSV())
 				.header("content-type", "csv")
-				.header("content-disposition", "inline; filename=\"Nutzerliste.csv\"");
+				.header("content-disposition", "inline; filename=\"Nutzerliste.csv\"")
 		}
 	}
 
@@ -37,6 +39,7 @@ fun UserEndpoints() {
 			checkAuthorization(admin = true)
 
 			data class Request(val ids: List<String>)
+
 			val request = bodyAsClass<Request>()
 
 			json(main.users.getByIds(request.ids, UserTable.DEFAULT_ORDER))
@@ -58,9 +61,11 @@ fun UserEndpoints() {
 			if (!request.email.isValidEmail()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
 
 			val id = auth.jwt.subject!!
-			val type = auth.jwt.getClaim("type")!!.asString()
+			val type = ParentType.valueOf(auth.jwt.getClaim("type").asString())
 
-			TODO("EMAIL verification")
+			val parent = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
+
+			main.email.sendVerificationEmail(request.firstName, request.lastName, request.email, parent)
 		}
 	}
 
@@ -73,15 +78,20 @@ fun UserEndpoints() {
 			val request = bodyAsClass<Request>()
 
 			val email = auth.jwt.subject
-			val firstName = auth.jwt.getClaim("firstName")!!.asString()
-			val lastName = auth.jwt.getClaim("lastName")!!.asString()
+			val firstName = auth.jwt.getClaim("fn").asString()
+			val lastName = auth.jwt.getClaim("ln").asString()
 			val password = request.password
 
 			if (password.length < 8) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
-
 			if (main.users.getByEmail(email) != null) throw ErrorResponse(ErrorResponseType.USER_ALREADY_EXISTS)
 
-			main.users.create(firstName, lastName, email, hashPassword(password))
+			val id = auth.jwt.getClaim("pi").asString()
+			val type = ParentType.valueOf(auth.jwt.getClaim("pt").asString())
+
+			val resource = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
+
+			val user = main.users.create(firstName, lastName, email, hashPassword(password))
+			main.participants.join(user.id!!, MemberType.USER, resource.id!!, type)
 		}
 	}
 
@@ -98,6 +108,28 @@ fun UserEndpoints() {
 			} catch (_: ConflictException) {
 				throw ErrorResponse(ErrorResponseType.USER_ALREADY_EXISTS)
 			}
+		}
+	}
+
+	patch("@me") {
+		with(it) {
+			data class UpdateRequest(val firstName: String?, val lastName: String?, val emailTypes: EnumSet<EmailType>?)
+			val request = bodyAsClass<UpdateRequest>()
+
+			val auth = checkAuthorization()
+			val user = auth.user
+
+			if (request.firstName != null && !request.firstName.isValidName()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
+			if (request.lastName != null && !request.lastName.isValidName()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
+			if (request.emailTypes != null && !request.emailTypes.all { it.custom }) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
+
+			user.copy(
+				firstName = request.firstName ?: user.firstName,
+				lastName = request.lastName ?: user.lastName,
+				emailTypes = request.emailTypes ?: user.emailTypes
+			).update()
+
+			json(user)
 		}
 	}
 
@@ -124,27 +156,6 @@ fun UserEndpoints() {
 			}
 		}
 
-		patch {
-			with(it) {
-				data class UpdateRequest(val firstName: String?, val lastName: String?)
-
-				val request = bodyAsClass<UpdateRequest>()
-
-				val target = getTarget()
-				val user = main.users.getById(target) ?: throw ErrorResponse(ErrorResponseType.USER_NOT_FOUND)
-
-				if (request.firstName != null && !request.firstName.isValidName()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
-				if (request.lastName != null && !request.lastName.isValidName()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
-
-				user.copy(
-					firstName = request.firstName ?: user.firstName,
-					lastName = request.lastName ?: user.lastName
-				).update()
-
-				json(user)
-			}
-		}
-
 		path("skills") {
 			get {
 				with(it) {
@@ -158,7 +169,6 @@ fun UserEndpoints() {
 			put {
 				with(it) {
 					data class Request(val skills: List<String>)
-
 					val request = bodyAsClass<Request>()
 
 					val target = getTarget()

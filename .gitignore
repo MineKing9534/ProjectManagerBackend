@@ -40,5 +40,7 @@ bin/
 
 ### Mac OS ###
 .DS_Store
-run_local
-run_production
+
+run_*
+.sass-cache
+gradle.properties

@@ -36,6 +36,7 @@ class Main(val config: Config, val credentials: Dotenv) {
 	)
 
 	val authenticator = Authenticator(this)
+	val email = EmailClient(this)
 
 	val meetings: MeetingTable
 	val participants: ParticipantTable

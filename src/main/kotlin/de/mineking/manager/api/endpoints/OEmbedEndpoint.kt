@@ -23,7 +23,7 @@ fun OEmbedEndpoint(ctx: Context) = with(ctx) {
 			val auth = main.authenticator.checkAuthorization(token, type = TokenType.INVITE)
 
 			val id = auth.jwt.subject!!
-			val type = auth.jwt.getClaim("type")!!.asString()
+			val type = auth.jwt.getClaim("type").asString()
 
 			TODO("read object, send response")
 		} else Response(provider_name = main.config.info.provider, author_name = main.config.info.author, title = main.config.info.title)
