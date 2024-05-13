@@ -6,6 +6,7 @@ import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.api.main
 import de.mineking.manager.data.ParentType
+import de.mineking.manager.data.table.ResourceTable
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
 
@@ -13,7 +14,7 @@ fun TeamEndpoints() {
 	get {
 		with(it) {
 			checkAuthorization(admin = true)
-			json(main.teams.getAll())
+			json(main.teams.getAll(ResourceTable.DEFAULT_ORDER))
 		}
 	}
 

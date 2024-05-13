@@ -5,6 +5,7 @@ import de.mineking.databaseutils.DataClass
 import de.mineking.javautils.ID
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.data.table.IdentifiableTable
+import de.mineking.manager.data.table.ResourceTable
 import de.mineking.manager.data.type.Resource
 import de.mineking.manager.main.DEFAULT_ID
 import de.mineking.manager.main.Main
@@ -24,7 +25,7 @@ enum class MemberType {
 	TEAM
 }
 
-enum class ParentType(val error: ErrorResponseType, val table: (main: Main) -> IdentifiableTable<out Resource>) {
+enum class ParentType(val error: ErrorResponseType, val table: (main: Main) -> ResourceTable<*>) {
 	TEAM(ErrorResponseType.TEAM_NOT_FOUND, { it.teams }),
 	MEETING(ErrorResponseType.MEETING_NOT_FOUND, { it.meetings });
 }

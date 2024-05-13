@@ -5,10 +5,10 @@ import de.mineking.manager.data.MemberType
 import de.mineking.manager.data.ParentType
 import de.mineking.manager.data.Team
 
-interface TeamTable : IdentifiableTable<Team> {
+interface TeamTable : ResourceTable<Team> {
 	fun create(name: String): Team = insert(Team(main, name = name))
 
-	fun getTeams(parent: String) = getByIds(getTeamIds(parent))
+	fun getTeams(parent: String) = getByIds(getTeamIds(parent), ResourceTable.DEFAULT_ORDER)
 	fun getTeamIds(parent: String): List<String> {
 		val parents = main.participants.getParents(parent)
 			.filter { it.parentType == ParentType.TEAM }

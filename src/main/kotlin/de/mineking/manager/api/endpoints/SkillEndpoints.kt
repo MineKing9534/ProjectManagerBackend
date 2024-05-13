@@ -5,6 +5,7 @@ import de.mineking.manager.api.checkAuthorization
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.api.main
+import de.mineking.manager.data.table.ResourceTable
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
 
@@ -12,7 +13,7 @@ fun SkillEndpoints() {
 	get {
 		with(it) {
 			checkAuthorization()
-			json(main.skills.getAll())
+			json(main.skills.getAll(ResourceTable.DEFAULT_ORDER))
 		}
 	}
 

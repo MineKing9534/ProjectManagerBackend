@@ -25,6 +25,11 @@ interface UserTable : IdentifiableTable<User> {
 		)
 	)
 
+	override fun delete(id: String): Boolean {
+		main.participants.delete(Where.equals("member", id))
+		return super.delete(id)
+	}
+
 	fun exportCSV(): String = manager.driver.withHandleUnchecked {
 		var result = ""
 		val copy = CopyManager(it.connection as BaseConnection).copyOut("""copy (select id as "ID", firstname as "Vorname", lastname as "Nachname", email as "E-Mail" from users order by firstname, lastname) to stdout delimiter ',' csv header""".trimMargin())
