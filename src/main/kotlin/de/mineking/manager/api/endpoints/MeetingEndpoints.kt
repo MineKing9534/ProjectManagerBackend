@@ -70,7 +70,7 @@ fun MeetingEndpoints() {
 			with(it) {
 				checkAuthorization(admin = true)
 
-				data class Request(val name: String?, val location: String?, val time: Instant?)
+				data class Request(val name: String?, val location: String?, val time: Instant?, val type: MeetingType?)
 
 				val request = bodyAsClass<Request>()
 
@@ -81,7 +81,8 @@ fun MeetingEndpoints() {
 					meeting.copy(
 						name = request.name ?: meeting.name,
 						location = request.location ?: meeting.location,
-						time = request.time ?: meeting.time
+						time = request.time ?: meeting.time,
+						type = request.type ?: meeting.type
 					).update()
 				)
 			}
