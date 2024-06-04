@@ -21,7 +21,12 @@ fun UserEndpoints() {
 	get {
 		with(it) {
 			checkAuthorization(admin = true)
-			json(main.users.getAllIds(UserTable.DEFAULT_ORDER))
+
+			val parent = queryParam("parent")
+			json(
+				if(parent != null) main.participants.getParticipantUserIds(parent)
+				else main.users.getAllIds(UserTable.DEFAULT_ORDER)
+			)
 		}
 	}
 
@@ -243,7 +248,12 @@ fun UserEndpoints() {
 			get {
 				with(it) {
 					val target = getTarget()
-					json(main.meetings.getMeetings(target))
+					val parent = queryParam("parent")
+
+					val user = main.meetings.getMeetings(target)
+
+					if (parent == null) json(user)
+					else json(user.intersect(main.meetings.getMeetings(parent).toSet()))
 				}
 			}
 

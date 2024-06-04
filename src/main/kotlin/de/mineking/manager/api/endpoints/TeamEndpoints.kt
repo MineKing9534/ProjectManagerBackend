@@ -84,5 +84,17 @@ fun TeamEndpoints() {
 				}
 			}
 		}
+
+		post("invites") {
+			with(it) {
+				checkAuthorization(admin = true)
+
+				val id = pathParam("id")
+				val team = main.teams.getById(id) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
+
+				data class Response(val token: String)
+				json(Response(main.authenticator.generateInviteToken(team)))
+			}
+		}
 	}
 }

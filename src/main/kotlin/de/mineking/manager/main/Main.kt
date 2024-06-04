@@ -17,6 +17,9 @@ import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.data.*
 import de.mineking.manager.data.table.*
 import io.github.cdimascio.dotenv.Dotenv
+import java.time.DateTimeException
+import java.time.Instant
+import java.time.format.DateTimeFormatter
 import kotlin.jvm.internal.Reflection
 import kotlin.reflect.KClass
 import kotlin.reflect.full.memberProperties
@@ -77,6 +80,20 @@ val JSON: Gson = GsonBuilder()
 		override fun read(reader: JsonReader?): ID? {
 			val id = reader?.nextString()
 			return if (id == null) null else ID.decode(id)
+		}
+	})
+	.registerTypeAdapter(Instant::class.java, object : TypeAdapter<Instant>() {
+		override fun write(writer: JsonWriter?, value: Instant?) {
+			writer?.value(value?.toString())
+		}
+
+		override fun read(reader: JsonReader?): Instant? {
+			try {
+				val value = reader?.nextString()
+				return if (value == null) null else Instant.parse(value)
+			} catch (e: DateTimeException) {
+				throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
+			}
 		}
 	})
 	.registerTypeAdapterFactory(object : TypeAdapterFactory {

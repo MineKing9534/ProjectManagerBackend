@@ -12,6 +12,7 @@ import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.data.ParentType
 import de.mineking.manager.data.User
+import de.mineking.manager.data.type.Resource
 import de.mineking.manager.main.Main
 import io.javalin.http.Context
 import io.javalin.http.InternalServerErrorResponse
@@ -43,10 +44,10 @@ class Authenticator(private val main: Main) {
 		.withExpiresAt(Instant.now().plus(Duration.ofHours(4)))
 		.sign(algorithm)
 
-	fun generateInviteToken(id: String, type: ParentType): String = JWT.create()
+	fun generateInviteToken(resource: Resource): String = JWT.create()
 		.withIssuer("INVITE")
-		.withSubject(id)
-		.withClaim("type", type.name)
+		.withSubject(resource.id!!.asString())
+		.withClaim("type", resource.resourceType.name)
 		.sign(algorithm)
 
 	fun generateVerificationToken(firstName: String, lastName: String, email: String, parent: String, parentType: ParentType): String = JWT.create()
