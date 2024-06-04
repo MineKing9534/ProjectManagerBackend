@@ -10,12 +10,14 @@ version = "1.0.0"
 
 repositories {
     mavenCentral()
+
 	maven { url = uri("https://maven.mineking.dev/releases") }
+	maven { url = uri("https://maven.mineking.dev/snapshots") }
 }
 
 dependencies {
 	implementation("de.mineking:JavaUtils:1.9.0")
-	implementation("de.mineking:DatabaseUtils:1.1.0")
+	implementation("de.mineking:DatabaseUtils:fb4a87c")
 
 	implementation("io.javalin:javalin:6.1.4")
 	implementation("org.simplejavamail:simple-java-mail:8.10.1")

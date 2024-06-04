@@ -5,6 +5,7 @@ import de.mineking.manager.api.checkAuthorization
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.api.main
+import de.mineking.manager.api.paginateResult
 import de.mineking.manager.data.ParentType
 import de.mineking.manager.data.table.ResourceTable
 import io.javalin.apibuilder.ApiBuilder.*
@@ -14,7 +15,8 @@ fun TeamEndpoints() {
 	get {
 		with(it) {
 			checkAuthorization(admin = true)
-			json(main.teams.getAll(ResourceTable.DEFAULT_ORDER))
+
+			paginateResult(this, main.teams.rowCount, main.teams::getAll, ResourceTable.DEFAULT_ORDER)
 		}
 	}
 

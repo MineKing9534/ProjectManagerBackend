@@ -1,5 +1,6 @@
 package de.mineking.manager.data.table
 
+import de.mineking.databaseutils.Order
 import de.mineking.databaseutils.Table
 import de.mineking.databaseutils.Where
 import de.mineking.databaseutils.exception.ConflictException
@@ -35,7 +36,7 @@ interface ParticipantTable : Table<Participant> {
 	) > 0
 
 	fun getParticipants(id: String): List<Participant> = selectMany(Where.equals("parent", id))
-	fun getParticipantUsers(id: String, teams: Boolean = false): List<User> = main.users.getByIds(getParticipantUserIds(id, teams))
+	fun getParticipantUsers(id: String, teams: Boolean = false, order: Order? = null): List<User> = main.users.getByIds(getParticipantUserIds(id, teams), order)
 	fun getParticipantUserIds(id: String, teams: Boolean = false): List<String> = getParticipants(id).stream()
 		.flatMap { participant ->
 			if (participant.memberType == MemberType.USER) Stream.of(participant.member.asString())

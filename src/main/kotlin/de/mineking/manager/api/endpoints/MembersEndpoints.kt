@@ -5,8 +5,10 @@ import de.mineking.manager.api.checkAuthorization
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.api.main
+import de.mineking.manager.api.paginateResult
 import de.mineking.manager.data.MemberType
 import de.mineking.manager.data.ParentType
+import de.mineking.manager.data.table.UserTable
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
 
@@ -14,16 +16,13 @@ fun MembersEndpoints() {
 	path("users") {
 		get {
 			with(it) {
-				val auth = checkAuthorization()
+				checkAuthorization(admin = true)
 
 				val id = pathParam("id")
 				val type = attribute<ParentType>("type")!!
 				type.table(main).getById(id) ?: throw ErrorResponse(type.error)
 
-				val users = main.participants.getParticipantUserIds(id)
-				if (!auth.user.admin && auth.user.id!!.asString() !in users) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
-
-				json(users)
+				paginateResult(this, type.table(main).rowCount, { order -> main.participants.getParticipantUsers(id, false, order) }, UserTable.DEFAULT_ORDER)
 			}
 		}
 

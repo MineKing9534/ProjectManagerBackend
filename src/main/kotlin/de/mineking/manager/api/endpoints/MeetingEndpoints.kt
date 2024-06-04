@@ -4,9 +4,10 @@ import de.mineking.manager.api.checkAuthorization
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.api.main
+import de.mineking.manager.api.paginateResult
 import de.mineking.manager.data.MeetingType
 import de.mineking.manager.data.ParentType
-import de.mineking.manager.data.table.MeetingTable
+import de.mineking.manager.data.table.ResourceTable
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
 import java.time.Instant
@@ -15,7 +16,8 @@ fun MeetingEndpoints() {
 	get {
 		with(it) {
 			checkAuthorization(admin = true)
-			json(main.meetings.getAll(MeetingTable.DEFAULT_ORDER))
+
+			paginateResult(this, main.meetings.rowCount, main.meetings::getAll, ResourceTable.DEFAULT_ORDER)
 		}
 	}
 

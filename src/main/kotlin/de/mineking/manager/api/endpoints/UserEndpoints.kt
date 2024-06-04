@@ -23,11 +23,7 @@ fun UserEndpoints() {
 		with(it) {
 			checkAuthorization(admin = true)
 
-			val parent = queryParam("parent")
-			json(
-				if (parent != null) main.participants.getParticipantUserIds(parent)
-				else main.users.getAllIds(UserTable.DEFAULT_ORDER)
-			)
+			paginateResult(this, main.users.rowCount, main.users::getAll, UserTable.DEFAULT_ORDER)
 		}
 	}
 
@@ -46,18 +42,6 @@ fun UserEndpoints() {
 
 			header("content-type", "csv")
 			header("content-disposition", "inline; filename=\"Nutzerliste.csv\"")
-		}
-	}
-
-	post("resolve") {
-		with(it) {
-			checkAuthorization(admin = true)
-
-			data class Request(val ids: List<String>)
-
-			val request = bodyAsClass<Request>()
-
-			json(main.users.getByIds(request.ids, UserTable.DEFAULT_ORDER))
 		}
 	}
 
