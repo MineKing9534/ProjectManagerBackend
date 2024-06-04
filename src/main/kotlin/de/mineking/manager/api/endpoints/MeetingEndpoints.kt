@@ -7,6 +7,7 @@ import de.mineking.manager.api.main
 import de.mineking.manager.api.paginateResult
 import de.mineking.manager.data.MeetingType
 import de.mineking.manager.data.ParentType
+import de.mineking.manager.data.table.MeetingTable
 import de.mineking.manager.data.table.ResourceTable
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
@@ -17,7 +18,7 @@ fun MeetingEndpoints() {
 		with(it) {
 			checkAuthorization(admin = true)
 
-			paginateResult(this, main.meetings.rowCount, main.meetings::getAll, ResourceTable.DEFAULT_ORDER)
+			paginateResult(this, main.meetings.rowCount, main.meetings::getAll, MeetingTable.DEFAULT_ORDER)
 		}
 	}
 
