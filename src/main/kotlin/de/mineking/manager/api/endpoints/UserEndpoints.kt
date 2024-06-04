@@ -1,5 +1,6 @@
 package de.mineking.manager.api.endpoints
 
+import de.mineking.databaseutils.Where
 import de.mineking.databaseutils.exception.ConflictException
 import de.mineking.javautils.ID
 import de.mineking.manager.api.*
@@ -33,9 +34,16 @@ fun UserEndpoints() {
 	post("csv") {
 		with(it) {
 			checkAuthorization(admin = true)
-			result(main.users.exportCSV())
-				.header("content-type", "csv")
-				.header("content-disposition", "inline; filename=\"Nutzerliste.csv\"")
+
+			val parent = queryParam("parent")
+
+			result(main.users.exportCSV(
+				if(parent != null) Where.valueContainsField("id", main.participants.getParticipantUserIds(parent))
+				else Where.empty()
+			))
+
+			header("content-type", "csv")
+			header("content-disposition", "inline; filename=\"Nutzerliste.csv\"")
 		}
 	}
 

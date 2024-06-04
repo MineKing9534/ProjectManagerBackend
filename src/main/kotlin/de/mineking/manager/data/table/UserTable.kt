@@ -30,9 +30,9 @@ interface UserTable : IdentifiableTable<User> {
 		return super.delete(id)
 	}
 
-	fun exportCSV(): String = manager.driver.withHandleUnchecked {
+	fun exportCSV(where: Where? = Where.empty()): String = manager.driver.withHandleUnchecked {
 		var result = ""
-		val copy = CopyManager(it.connection as BaseConnection).copyOut("""copy (select id as "ID", firstname as "Vorname", lastname as "Nachname", email as "E-Mail" from users order by firstname, lastname) to stdout delimiter ',' csv header""".trimMargin())
+		val copy = CopyManager(it.connection as BaseConnection).copyOut("""copy (select id as "ID", firstname as "Vorname", lastname as "Nachname", email as "E-Mail" from users ${ (where ?: Where.empty()).format() } order by firstname, lastname) to stdout delimiter ',' csv header""".trimMargin())
 
 		while (true) {
 			val line = copy.readFromCopy() ?: break
