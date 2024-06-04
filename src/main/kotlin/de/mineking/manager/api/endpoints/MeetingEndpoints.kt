@@ -85,5 +85,17 @@ fun MeetingEndpoints() {
 				)
 			}
 		}
+
+		post("invites") {
+			with(it) {
+				checkAuthorization(admin = true)
+
+				val id = pathParam("id")
+				val meeting = main.meetings.getById(id) ?: throw ErrorResponse(ErrorResponseType.MEETING_NOT_FOUND)
+
+				data class Response(val token: String)
+				json(Response(main.authenticator.generateInviteToken(meeting)))
+			}
+		}
 	}
 }
