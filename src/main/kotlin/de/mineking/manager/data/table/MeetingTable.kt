@@ -4,7 +4,6 @@ import de.mineking.databaseutils.Order
 import de.mineking.manager.data.Meeting
 import de.mineking.manager.data.MeetingType
 import de.mineking.manager.data.ParentType
-import de.mineking.manager.data.Team
 import java.time.Instant
 
 interface MeetingTable : ResourceTable<Meeting> {

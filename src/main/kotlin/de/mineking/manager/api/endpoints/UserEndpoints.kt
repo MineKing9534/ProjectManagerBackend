@@ -25,7 +25,7 @@ fun UserEndpoints() {
 
 			val parent = queryParam("parent")
 			json(
-				if(parent != null) main.participants.getParticipantUserIds(parent)
+				if (parent != null) main.participants.getParticipantUserIds(parent)
 				else main.users.getAllIds(UserTable.DEFAULT_ORDER)
 			)
 		}
@@ -37,10 +37,12 @@ fun UserEndpoints() {
 
 			val parent = queryParam("parent")
 
-			result(main.users.exportCSV(
-				if(parent != null) Where.valueContainsField("id", main.participants.getParticipantUserIds(parent))
-				else Where.empty()
-			))
+			result(
+				main.users.exportCSV(
+					if (parent != null) Where.valueContainsField("id", main.participants.getParticipantUserIds(parent))
+					else Where.empty()
+				)
+			)
 
 			header("content-type", "csv")
 			header("content-disposition", "inline; filename=\"Nutzerliste.csv\"")
@@ -127,6 +129,7 @@ fun UserEndpoints() {
 	patch("@me") {
 		with(it) {
 			data class UpdateRequest(val firstName: String?, val lastName: String?, val emailTypes: EnumSet<EmailType>?)
+
 			val request = bodyAsClass<UpdateRequest>()
 
 			val auth = checkAuthorization()
@@ -182,6 +185,7 @@ fun UserEndpoints() {
 			put {
 				with(it) {
 					data class Request(val skills: List<String>)
+
 					val request = bodyAsClass<Request>()
 
 					val target = getTarget()

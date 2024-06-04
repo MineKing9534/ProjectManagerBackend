@@ -74,11 +74,13 @@ fun MeetingEndpoints() {
 				val id = pathParam("id")
 				val meeting = main.meetings.getById(id) ?: throw ErrorResponse(ErrorResponseType.MEETING_NOT_FOUND)
 
-				json(meeting.copy(
-					name = request.name ?: meeting.name,
-					location = request.location ?: meeting.location,
-					time = request.time ?: meeting.time
-				).update())
+				json(
+					meeting.copy(
+						name = request.name ?: meeting.name,
+						location = request.location ?: meeting.location,
+						time = request.time ?: meeting.time
+					).update()
+				)
 			}
 		}
 	}

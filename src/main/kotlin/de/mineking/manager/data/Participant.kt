@@ -4,9 +4,7 @@ import de.mineking.databaseutils.Column
 import de.mineking.databaseutils.DataClass
 import de.mineking.javautils.ID
 import de.mineking.manager.api.error.ErrorResponseType
-import de.mineking.manager.data.table.IdentifiableTable
 import de.mineking.manager.data.table.ResourceTable
-import de.mineking.manager.data.type.Resource
 import de.mineking.manager.main.DEFAULT_ID
 import de.mineking.manager.main.Main
 

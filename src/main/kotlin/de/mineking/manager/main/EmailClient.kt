@@ -1,7 +1,6 @@
 package de.mineking.manager.main
 
 import de.mineking.manager.data.Meeting
-import de.mineking.manager.data.ParentType
 import de.mineking.manager.data.User
 import de.mineking.manager.data.type.Resource
 import jakarta.mail.Message
@@ -25,9 +24,10 @@ class EmailClient(val main: Main) {
 			main.credentials["EMAIL_USER"] ?: throw NullPointerException("EMAIL_USER required"),
 			main.credentials["EMAIL_PASSWORD"] ?: throw NullPointerException("EMAIL_PASSWORD required")
 		)
-		.withEmailDefaults(EmailBuilder.startingBlank()
-			.from("Projektverwaltung", main.credentials["EMAIL_USER"] ?: throw NullPointerException("EMAIL_USER required"))
-			.buildEmail()
+		.withEmailDefaults(
+			EmailBuilder.startingBlank()
+				.from("Projektverwaltung", main.credentials["EMAIL_USER"] ?: throw NullPointerException("EMAIL_USER required"))
+				.buildEmail()
 		)
 		.withTransportStrategy(strategy)
 		.withSessionTimeout(10 * 1000)
@@ -35,17 +35,18 @@ class EmailClient(val main: Main) {
 		.buildMailer()
 
 	init {
-		mailer.testConnection();
+		mailer.testConnection()
 	}
 
 	fun sendVerificationEmail(firstName: String, lastName: String, email: String, parent: Resource) {
 		val token = main.authenticator.generateVerificationToken(firstName, lastName, email, parent.id!!.asString(), parent.resourceType)
 
-		mailer.sendMail(EmailBuilder.startingBlank()
-			.to(email)
-			.withSubject(EmailType.VERIFICATION.title)
-			.withHTMLText(EmailType.VERIFICATION.format(main, arrayOf(firstName, lastName, token, parent)))
-			.buildEmail()
+		mailer.sendMail(
+			EmailBuilder.startingBlank()
+				.to(email)
+				.withSubject(EmailType.VERIFICATION.title)
+				.withHTMLText(EmailType.VERIFICATION.format(main, arrayOf(firstName, lastName, token, parent)))
+				.buildEmail()
 		)
 	}
 
@@ -55,11 +56,12 @@ class EmailClient(val main: Main) {
 		val recipients = users.filter { type in it.emailTypes }
 		if (recipients.isEmpty()) return
 
-		mailer.sendMail(EmailBuilder.startingBlank()
-			.bcc(recipients.map { Recipient("${ it.firstName } ${ it.lastName }", it.email, Message.RecipientType.BCC) })
-			.withSubject(type.title)
-			.withHTMLText(type.format(main, arg))
-			.buildEmail()
+		mailer.sendMail(
+			EmailBuilder.startingBlank()
+				.bcc(recipients.map { Recipient("${it.firstName} ${it.lastName}", it.email, Message.RecipientType.BCC) })
+				.withSubject(type.title)
+				.withHTMLText(type.format(main, arg))
+				.buildEmail()
 		)
 	}
 }
@@ -68,8 +70,8 @@ enum class EmailType(val custom: Boolean = true, val title: String) {
 	VERIFICATION(false, title = "Kontoeinrichtung Abschließen") {
 		//firstName, lastName, token, parent
 		override fun format(main: Main, arg: Array<Any>): String = html
-			.replace("%name%", "${ arg[0] } ${ arg[1] }")
-			.replace("%url%", "${ main.config.url }/verify?token=${ arg[2] }")
+			.replace("%name%", "${arg[0]} ${arg[1]}")
+			.replace("%url%", "${main.config.url}/verify?token=${arg[2]}")
 			.replace("%target%", (arg[3] as Resource).name)
 	},
 
@@ -78,29 +80,29 @@ enum class EmailType(val custom: Boolean = true, val title: String) {
 		override fun format(main: Main, arg: Array<Any>): String = html
 			.replace("%parent%", (arg[0] as Resource).name)
 			.replace("%name%", (arg[1] as Meeting).name)
-			.replace("%url%", "${ main.config.url }/@me/meetings/${ (arg[1] as Meeting).id!!.asString() }")
+			.replace("%url%", "${main.config.url}/@me/meetings/${(arg[1] as Meeting).id!!.asString()}")
 	},
 	MEETING_DELETE(title = "Treffen Abgesagt") {
 		//parent, meeting
 		override fun format(main: Main, arg: Array<Any>): String = html
 			.replace("%parent%", (arg[0] as Resource).name)
 			.replace("%name%", (arg[1] as Meeting).name)
-			.replace("%url%", "${ main.config.url }/@me/${ (arg[0] as Resource).resourceType.name.lowercase() }s/${ (arg[0] as Resource).id }")
+			.replace("%url%", "${main.config.url}/@me/${(arg[0] as Resource).resourceType.name.lowercase()}s/${(arg[0] as Resource).id}")
 	},
 	MEETING_UPDATE(title = "Änderungen für Treffen") {
 		//meeting
 		override fun format(main: Main, arg: Array<Any>): String = html
 			.replace("%name%", (arg[0] as Meeting).name)
-			.replace("%url%", "${ main.config.url }/@me/meetings/${ (arg[0] as Meeting).id!!.asString() }")
+			.replace("%url%", "${main.config.url}/@me/meetings/${(arg[0] as Meeting).id!!.asString()}")
 	},
 	INFO_UPDATE(title = "Neue Informationen") {
 		//resource
 		override fun format(main: Main, arg: Array<Any>): String = html
 			.replace("%name%", (arg[0] as Resource).name)
-			.replace("%url%", "${ main.config.url }/@me/${ (arg[0] as Resource).resourceType.name.lowercase() }s/${ (arg[0] as Resource).id }")
+			.replace("%url%", "${main.config.url}/@me/${(arg[0] as Resource).resourceType.name.lowercase()}s/${(arg[0] as Resource).id}")
 	};
 
-	val html: String = EmailType::class.java.getResource("/email/${ name.lowercase() }.html")?.readText() ?: throw FileNotFoundException("Email $name")
+	val html: String = EmailType::class.java.getResource("/email/${name.lowercase()}.html")?.readText() ?: throw FileNotFoundException("Email $name")
 
 	open fun format(main: Main, arg: Array<Any>): String = html
 }
