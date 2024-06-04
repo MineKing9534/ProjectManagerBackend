@@ -67,14 +67,18 @@ fun MeetingEndpoints() {
 			with(it) {
 				checkAuthorization(admin = true)
 
-				data class Request(val name: String)
+				data class Request(val name: String?, val location: String?, val time: Instant?)
 
 				val request = bodyAsClass<Request>()
 
 				val id = pathParam("id")
 				val meeting = main.meetings.getById(id) ?: throw ErrorResponse(ErrorResponseType.MEETING_NOT_FOUND)
 
-				json(meeting.copy(name = request.name).update())
+				json(meeting.copy(
+					name = request.name ?: meeting.name,
+					location = request.location ?: meeting.location,
+					time = request.time ?: meeting.time
+				).update())
 			}
 		}
 	}

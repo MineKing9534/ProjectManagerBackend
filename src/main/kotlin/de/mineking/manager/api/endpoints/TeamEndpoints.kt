@@ -70,7 +70,7 @@ fun TeamEndpoints() {
 			with(it) {
 				checkAuthorization(admin = true)
 
-				data class Request(val name: String)
+				data class Request(val name: String?)
 
 				val request = bodyAsClass<Request>()
 
@@ -78,7 +78,9 @@ fun TeamEndpoints() {
 				val team = main.teams.getById(id) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
 
 				try {
-					json(team.copy(name = request.name).update())
+					json(team.copy(
+						name = request.name ?: team.name
+					).update())
 				} catch (_: ConflictException) {
 					throw ErrorResponse(ErrorResponseType.TEAM_ALREADY_EXISTS)
 				}
