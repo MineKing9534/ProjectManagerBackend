@@ -13,7 +13,9 @@ data class PaginationResult(
 
 fun paginateResult(ctx: Context, total: Int, getter: (order: Order) -> Collection<Any>, order: Order? = null) {
 	with(ctx) {
-		val totalPages = ((total - 1) / ENTRIES_PER_PAGE) + 1
+		val entriesPerPage = queryParamAsClass("entriesPerPage", Int::class.java).getOrDefault(ENTRIES_PER_PAGE)
+
+		val totalPages = ((total - 1) / entriesPerPage) + 1
 
 		val page = queryParamAsClass("page", Int::class.java)
 			.check({ it in 1..totalPages }, "Invalid 'page'")
@@ -22,7 +24,7 @@ fun paginateResult(ctx: Context, total: Int, getter: (order: Order) -> Collectio
 		json(PaginationResult(
 			page,
 			totalPages,
-			getter((order ?: Order.empty()).offset((page - 1) * ENTRIES_PER_PAGE).limit(ENTRIES_PER_PAGE))
+			getter((order ?: Order.empty()).offset((page - 1) * entriesPerPage).limit(entriesPerPage))
 		))
 	}
 }
