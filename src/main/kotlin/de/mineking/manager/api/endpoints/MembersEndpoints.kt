@@ -62,6 +62,8 @@ fun MembersEndpoints() {
 
 	delete("{member}") {
 		with(it) {
+			checkAuthorization(admin = true)
+
 			val id = pathParam("id")
 			val type = attribute<ResourceType>("type")!!
 			val resource = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
