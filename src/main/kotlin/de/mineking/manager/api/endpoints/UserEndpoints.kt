@@ -2,13 +2,12 @@ package de.mineking.manager.api.endpoints
 
 import de.mineking.databaseutils.Where
 import de.mineking.databaseutils.exception.ConflictException
-import de.mineking.javautils.ID
 import de.mineking.manager.api.*
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
-import de.mineking.manager.data.MemberType
-import de.mineking.manager.data.ParentType
-import de.mineking.manager.data.table.UserTable
+import de.mineking.manager.data.MeetingTable
+import de.mineking.manager.data.UserTable
+import de.mineking.manager.data.ResourceType
 import de.mineking.manager.main.EmailType
 import de.mineking.manager.main.hashPassword
 import io.javalin.apibuilder.ApiBuilder.*
@@ -23,22 +22,21 @@ fun UserEndpoints() {
 		with(it) {
 			checkAuthorization(admin = true)
 
-			paginateResult(this, main.users.rowCount, main.users::getAll, UserTable.DEFAULT_ORDER)
+			paginateResult(main.users.rowCount, main.users::getAll, UserTable.DEFAULT_ORDER)
 		}
 	}
 
 	post("csv") {
 		with(it) {
+			println("a")
+
 			checkAuthorization(admin = true)
 
-			val parent = queryParam("parent")
+			println("b")
 
-			result(
-				main.users.exportCSV(
-					if (parent != null) Where.valueContainsField("id", main.participants.getParticipantUserIds(parent))
-					else Where.empty()
-				)
-			)
+			result(main.users.exportCSV())
+
+			println("c")
 
 			header("content-type", "csv")
 			header("content-disposition", "inline; filename=\"Nutzerliste.csv\"")
@@ -60,7 +58,7 @@ fun UserEndpoints() {
 			if (!request.email.isValidEmail()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
 
 			val id = auth.jwt.subject!!
-			val type = ParentType.valueOf(auth.jwt.getClaim("type").asString())
+			val type = ResourceType.valueOf(auth.jwt.getClaim("type").asString())
 
 			val parent = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
 
@@ -85,12 +83,12 @@ fun UserEndpoints() {
 			if (main.users.getByEmail(email) != null) throw ErrorResponse(ErrorResponseType.USER_ALREADY_EXISTS)
 
 			val id = auth.jwt.getClaim("pi").asString()
-			val type = ParentType.valueOf(auth.jwt.getClaim("pt").asString())
+			val type = ResourceType.valueOf(auth.jwt.getClaim("pt").asString())
 
 			val resource = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
 
 			val user = main.users.create(firstName, lastName, email, hashPassword(password))
-			main.participants.join(user.id!!, MemberType.USER, resource.id!!, type)
+			main.participants.join(user.id, resource.id, type)
 		}
 	}
 
@@ -136,32 +134,22 @@ fun UserEndpoints() {
 	path("{id}") {
 		get {
 			with(it) {
-				val auth = checkAuthorization()
-
-				var id = pathParam("id")
-				if (id == "@me") id = auth.user.id!!.asString()
-
-				val known = main.participants.getParents(auth.user.id!!.asString()).flatMap { main.participants.getParticipantUserIds(it.parent.asString()) }
-				if (!auth.user.admin && auth.user.id!!.asString() != id && auth.user.id!!.asString() !in known) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
-
-				val user = main.users.getById(id) ?: throw ErrorResponse(ErrorResponseType.USER_NOT_FOUND)
+				val user = getTarget(main.users, ErrorResponseType.USER_NOT_FOUND)
 				json(user)
 			}
 		}
 
 		delete {
 			with(it) {
-				val target = getTarget()
-				if (!main.users.delete(target)) throw ErrorResponse(ErrorResponseType.USER_NOT_FOUND)
+				val user = getTarget(main.users, ErrorResponseType.USER_NOT_FOUND)
+				user.delete()
 			}
 		}
 
 		path("skills") {
 			get {
 				with(it) {
-					val target = getTarget()
-					val user = main.users.getById(target) ?: throw ErrorResponse(ErrorResponseType.USER_NOT_FOUND)
-
+					val user = getTarget(main.users, ErrorResponseType.USER_NOT_FOUND)
 					json(user.skills)
 				}
 			}
@@ -172,8 +160,7 @@ fun UserEndpoints() {
 
 					val request = bodyAsClass<Request>()
 
-					val target = getTarget()
-					val user = main.users.getById(target) ?: throw ErrorResponse(ErrorResponseType.USER_NOT_FOUND)
+					val user = getTarget(main.users, ErrorResponseType.USER_NOT_FOUND)
 
 					val skills = main.skills.getAllIds()
 					if (!skills.containsAll(request.skills)) throw ErrorResponse(ErrorResponseType.SKILL_NOT_FOUND)
@@ -189,8 +176,7 @@ fun UserEndpoints() {
 
 					val request = bodyAsClass<Request>()
 
-					val target = getTarget()
-					val user = main.users.getById(target) ?: throw ErrorResponse(ErrorResponseType.USER_NOT_FOUND)
+					val user = getTarget(main.users, ErrorResponseType.USER_NOT_FOUND)
 
 					if (main.skills.getById(request.id) == null) throw ErrorResponse(ErrorResponseType.SKILL_NOT_FOUND)
 
@@ -200,8 +186,7 @@ fun UserEndpoints() {
 
 			delete("{skill}") {
 				with(it) {
-					val target = getTarget()
-					val user = main.users.getById(target) ?: throw ErrorResponse(ErrorResponseType.USER_NOT_FOUND)
+					val user = getTarget(main.users, ErrorResponseType.USER_NOT_FOUND)
 
 					val skill = pathParam("skill")
 					user.copy(skills = user.skills - skill).update()
@@ -209,70 +194,23 @@ fun UserEndpoints() {
 			}
 		}
 
-		path("teams") {
-			get {
-				with(it) {
-					val target = getTarget()
-					json(main.teams.getTeams(target))
-				}
-			}
-
-			put("{team}") {
-				with(it) {
-					val target = getTarget()
-
-					val id = pathParam("team")
-					val meeting = main.teams.getById(id) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
-
-					main.participants.join(ID.decode(target), MemberType.USER, meeting.id!!, ParentType.TEAM)
-				}
-			}
-
-			delete("{team}") {
-				with(it) {
-					val target = getTarget()
-
-					val id = pathParam("team")
-					val meeting = main.teams.getById(id) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
-
-					if (!main.participants.leave(ID.decode(target), meeting.id!!)) throw ErrorResponse(ErrorResponseType.PARTICIPANT_NOT_FOUND)
-				}
+		get("teams") {
+			with(it) {
+				val user = getTarget(main.users, ErrorResponseType.USER_NOT_FOUND)
+				paginateResult(main.teams.getUserTeams(user.id))
 			}
 		}
 
-		path("meetings") {
-			get {
-				with(it) {
-					val target = getTarget()
-					val parent = queryParam("parent")
+		get("meetings") {
+			with(it) {
+				val user = getTarget(main.users, ErrorResponseType.USER_NOT_FOUND)
 
-					val user = main.meetings.getMeetings(target)
+				val teams = main.teams.getUserTeams(user.id)
+				val teamMeetings = teams.flatMap { main.meetings.getMeetings(it.id.asString()) }
 
-					if (parent == null) json(user)
-					else json(user.intersect(main.meetings.getMeetings(parent).toSet()))
-				}
-			}
+				val meetings = main.participants.getParents(user.id, ResourceType.MEETING)
 
-			put("{meeting}") {
-				with(it) {
-					val target = getTarget()
-
-					val id = pathParam("meeting")
-					val meeting = main.meetings.getById(id) ?: throw ErrorResponse(ErrorResponseType.MEETING_NOT_FOUND)
-
-					main.participants.join(ID.decode(target), MemberType.USER, meeting.id!!, ParentType.MEETING)
-				}
-			}
-
-			delete("{meeting}") {
-				with(it) {
-					val target = getTarget()
-
-					val id = pathParam("meeting")
-					val meeting = main.meetings.getById(id) ?: throw ErrorResponse(ErrorResponseType.MEETING_NOT_FOUND)
-
-					if (!main.participants.leave(ID.decode(target), meeting.id!!)) throw ErrorResponse(ErrorResponseType.PARTICIPANT_NOT_FOUND)
-				}
+				paginateResult(teamMeetings + main.meetings.getByIds(meetings))
 			}
 		}
 	}

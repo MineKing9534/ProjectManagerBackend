@@ -17,7 +17,7 @@ repositories {
 
 dependencies {
 	implementation("de.mineking:JavaUtils:1.9.0")
-	implementation("de.mineking:DatabaseUtils:fb4a87c")
+	implementation("de.mineking:DatabaseUtils:2caa89a")
 
 	implementation("io.javalin:javalin:6.1.4")
 	implementation("org.simplejavamail:simple-java-mail:8.10.1")

@@ -15,8 +15,8 @@ import de.mineking.manager.api.Server
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.data.*
-import de.mineking.manager.data.table.*
 import io.github.cdimascio.dotenv.Dotenv
+import java.math.BigInteger
 import java.time.DateTimeException
 import java.time.Instant
 import kotlin.jvm.internal.Reflection
@@ -68,8 +68,7 @@ fun main() {
 	main.start()
 }
 
-
-val DEFAULT_ID = ID.generate()
+val DEFAULT_ID = ID.decode(BigInteger.ZERO)
 val JSON: Gson = GsonBuilder()
 	.registerTypeAdapter(ID::class.java, object : TypeAdapter<ID>() {
 		override fun write(writer: JsonWriter?, value: ID?) {

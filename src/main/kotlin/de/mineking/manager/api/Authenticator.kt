@@ -10,9 +10,9 @@ import com.auth0.jwt.exceptions.TokenExpiredException
 import com.auth0.jwt.interfaces.DecodedJWT
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
-import de.mineking.manager.data.ParentType
 import de.mineking.manager.data.User
-import de.mineking.manager.data.type.Resource
+import de.mineking.manager.data.Resource
+import de.mineking.manager.data.ResourceType
 import de.mineking.manager.main.Main
 import io.javalin.http.Context
 import io.javalin.http.InternalServerErrorResponse
@@ -39,18 +39,18 @@ class Authenticator(private val main: Main) {
 
 	fun generateUserToken(user: User): String = JWT.create()
 		.withIssuer("USER")
-		.withSubject(user.id?.asString())
+		.withSubject(user.id.asString())
 		.withClaim("ver", user.hashCode())
 		.withExpiresAt(Instant.now().plus(Duration.ofHours(4)))
 		.sign(algorithm)
 
 	fun generateInviteToken(resource: Resource): String = JWT.create()
 		.withIssuer("INVITE")
-		.withSubject(resource.id!!.asString())
+		.withSubject(resource.id.asString())
 		.withClaim("type", resource.resourceType.name)
 		.sign(algorithm)
 
-	fun generateVerificationToken(firstName: String, lastName: String, email: String, parent: String, parentType: ParentType): String = JWT.create()
+	fun generateVerificationToken(firstName: String, lastName: String, email: String, parent: String, parentType: ResourceType): String = JWT.create()
 		.withIssuer("VERIFICATION")
 		.withSubject(email)
 		.withClaim("fn", firstName)

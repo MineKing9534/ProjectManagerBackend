@@ -5,6 +5,8 @@ import de.mineking.databaseutils.DatabaseManager.logger
 import de.mineking.manager.api.endpoints.*
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
+import de.mineking.manager.data.Identifiable
+import de.mineking.manager.data.IdentifiableTable
 import de.mineking.manager.main.JSON
 import de.mineking.manager.main.Main
 import io.javalin.Javalin
@@ -28,15 +30,15 @@ fun Context.checkAuthorization(admin: Boolean = false, type: TokenType = TokenTy
 	return auth
 }
 
-fun Context.getTarget(name: String = "id", check: Boolean = true): String {
+fun <T: Identifiable> Context.getTarget(table: IdentifiableTable<T>, error: ErrorResponseType, name: String = "id"): T {
 	val auth = checkAuthorization()
 
 	var id = pathParam(name)
-	if (id == "@me") id = auth.user.id!!.asString()
+	if (id == "@me") id = auth.user.id.asString()
 
-	if (!auth.user.admin && id != auth.user.id!!.asString()) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+	if (!auth.user.admin && id != auth.user.id.asString()) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
 
-	return id
+	return table.getById(id) ?: throw ErrorResponse(error)
 }
 
 fun Context.checkSuperUser() {

@@ -2,7 +2,7 @@ package de.mineking.manager.main
 
 import de.mineking.manager.data.Meeting
 import de.mineking.manager.data.User
-import de.mineking.manager.data.type.Resource
+import de.mineking.manager.data.Resource
 import jakarta.mail.Message
 import org.simplejavamail.api.email.Recipient
 import org.simplejavamail.api.mailer.Mailer
@@ -39,7 +39,7 @@ class EmailClient(val main: Main) {
 	}
 
 	fun sendVerificationEmail(firstName: String, lastName: String, email: String, parent: Resource) {
-		val token = main.authenticator.generateVerificationToken(firstName, lastName, email, parent.id!!.asString(), parent.resourceType)
+		val token = main.authenticator.generateVerificationToken(firstName, lastName, email, parent.id.asString(), parent.resourceType)
 
 		mailer.sendMail(
 			EmailBuilder.startingBlank()
@@ -80,7 +80,7 @@ enum class EmailType(val custom: Boolean = true, val title: String) {
 		override fun format(main: Main, arg: Array<Any>): String = html
 			.replace("%parent%", (arg[0] as Resource).name)
 			.replace("%name%", (arg[1] as Meeting).name)
-			.replace("%url%", "${main.config.url}/@me/meetings/${(arg[1] as Meeting).id!!.asString()}")
+			.replace("%url%", "${main.config.url}/@me/meetings/${(arg[1] as Meeting).id.asString()}")
 	},
 	MEETING_DELETE(title = "Treffen Abgesagt") {
 		//parent, meeting
@@ -93,7 +93,7 @@ enum class EmailType(val custom: Boolean = true, val title: String) {
 		//meeting
 		override fun format(main: Main, arg: Array<Any>): String = html
 			.replace("%name%", (arg[0] as Meeting).name)
-			.replace("%url%", "${main.config.url}/@me/meetings/${(arg[0] as Meeting).id!!.asString()}")
+			.replace("%url%", "${main.config.url}/@me/meetings/${(arg[0] as Meeting).id.asString()}")
 	},
 	INFO_UPDATE(title = "Neue Informationen") {
 		//resource

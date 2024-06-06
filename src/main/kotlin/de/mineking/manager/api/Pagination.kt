@@ -11,20 +11,31 @@ data class PaginationResult(
 	val data: Collection<Any>
 )
 
-fun paginateResult(ctx: Context, total: Int, getter: (order: Order) -> Collection<Any>, order: Order? = null) {
-	with(ctx) {
-		val entriesPerPage = queryParamAsClass("entriesPerPage", Int::class.java).getOrDefault(ENTRIES_PER_PAGE)
+private fun Context.paginateResult(total: Int, elements: (Int, Int) -> Collection<Any>) {
+	val entriesPerPage = queryParamAsClass("entriesPerPage", Int::class.java).getOrDefault(ENTRIES_PER_PAGE)
 
-		val totalPages = ((total - 1) / entriesPerPage) + 1
+	val totalPages = ((total - 1) / entriesPerPage) + 1
 
-		val page = queryParamAsClass("page", Int::class.java)
-			.check({ it in 1..totalPages }, "Invalid 'page'")
-			.getOrDefault(1)
+	val page = queryParamAsClass("page", Int::class.java).allowNullable()
+		.check({ it == null || it in 1..totalPages }, "Invalid 'page'")
+		.get()
 
-		json(PaginationResult(
-			page,
-			totalPages,
-			getter((order ?: Order.empty()).offset((page - 1) * entriesPerPage).limit(entriesPerPage))
-		))
-	}
+	if(page == null) json(elements(1, Integer.MAX_VALUE))
+	else json(PaginationResult(
+		page,
+		totalPages,
+		elements.invoke(page, entriesPerPage)
+	))
+}
+
+fun Context.paginateResult(total: Int, getter: (order: Order) -> Collection<Any>, order: Order? = null) = paginateResult(total) { page, entriesPerPage ->
+	getter((order ?: Order.empty()).offset((page - 1) * entriesPerPage).limit(entriesPerPage))
+}
+
+fun Context.paginateResult(elements: Collection<Comparable<*>>) = paginateResult(elements.size) { page, entriesPerPage ->
+	elements.stream().unordered()
+		.skip((page - 1) * entriesPerPage.toLong())
+		.limit(entriesPerPage.toLong())
+		.sorted()
+		.toList()
 }
