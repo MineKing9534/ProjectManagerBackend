@@ -47,6 +47,11 @@ interface ParticipantTable : Table<Participant> {
 		)
 	) > 0
 
+	fun get(user: ID, resource: ID): Participant? = selectOne(Where.allOf(
+		Where.equals("user", user),
+		Where.equals("parent", resource)
+	)).orElse(null)
+
 	fun getParents(user: ID, parentType: ResourceType): Collection<String> = manager.driver.withHandleUnchecked { it.createQuery("select parent from $name where \"user\" = :user and parenttype = :parent")
 		.bind("user", user.asString())
 		.bind("parent", parentType)

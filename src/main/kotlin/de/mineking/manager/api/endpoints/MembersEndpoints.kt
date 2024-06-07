@@ -71,6 +71,16 @@ fun MembersEndpoints() {
 		}
 	}
 
+	get("@me") {
+		with(it) {
+			val auth = checkAuthorization()
+
+			val resource = attribute<Resource>("resource")!!
+
+			main.participants.get(auth.user.id, resource.id) ?: throw ErrorResponse(ErrorResponseType.PARTICIPANT_NOT_FOUND)
+		}
+	}
+
 	delete("{member}") {
 		with(it) {
 			checkAuthorization(admin = true)

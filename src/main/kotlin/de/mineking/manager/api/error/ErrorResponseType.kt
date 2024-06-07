@@ -27,5 +27,5 @@ enum class ErrorResponseType(val status: HttpStatus) {
 	INVALID_FILE_TYPE(HttpStatus.BAD_REQUEST),
 
 	ALREADY_PARTICIPATING(HttpStatus.CONFLICT),
-	PARTICIPANT_NOT_FOUND(HttpStatus.CONFLICT)
+	PARTICIPANT_NOT_FOUND(HttpStatus.NOT_FOUND)
 }
