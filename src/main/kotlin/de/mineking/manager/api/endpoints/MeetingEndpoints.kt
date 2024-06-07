@@ -59,7 +59,7 @@ fun MeetingEndpoints() {
 					meeting
 				))
 
-				if (!meeting.delete()) throw ErrorResponse(ErrorResponseType.MEETING_NOT_FOUND)
+				if (!main.meetings.delete(meeting.id.asString())) throw ErrorResponse(ErrorResponseType.MEETING_NOT_FOUND)
 			}
 		}
 

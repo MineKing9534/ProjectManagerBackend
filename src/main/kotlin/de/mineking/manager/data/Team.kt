@@ -39,8 +39,8 @@ interface TeamTable : ResourceTable<Team> {
 		val result = super.delete(id)
 
 		if(result) {
-			delete(Where.equals("parent", id))
-			main.meetings.delete(Where.equals("parent", id))
+			selectMany(Where.equals("parent", id)).forEach { delete(it.id.asString()) }
+			main.meetings.selectMany(Where.equals("parent", id)).forEach { main.meetings.delete(it.id.asString()) }
 		}
 
 		return result
