@@ -46,9 +46,9 @@ interface TeamTable : ResourceTable<Team> {
 		return result
 	}
 
-	fun getChildren(parent: ID) = selectMany(Where.equals("parent", parent))
+	fun getChildren(parent: ID) = selectMany(Where.equals("parent", parent.asString()))
 
 	fun getUserTeams(user: ID): Collection<Team> = main.participants.getParents(user, ResourceType.TEAM)
 		.mapNotNull { getById(it) }
-		.flatMap { it.getAccessibleTeams() }
+		.flatMap { it.getAccessibleTeams() + it }
 }
