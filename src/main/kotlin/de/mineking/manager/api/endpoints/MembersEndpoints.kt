@@ -7,6 +7,7 @@ import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.data.Resource
 import de.mineking.manager.data.ResourceType
 import de.mineking.manager.data.UserTable
+import de.mineking.manager.main.containsAny
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
 
@@ -26,7 +27,13 @@ fun MembersEndpoints() {
 			checkAuthorization(admin = true)
 
 			val resource = attribute<Resource>("resource")!!
-			paginateResult(resource.getParticipantCount(false), resource::resolveParticipants, UserTable.DEFAULT_ORDER)
+			val skills = queryParam("skills")?.split(",")?.toList()
+
+			if (skills.isNullOrEmpty()) paginateResult(resource.getParticipantCount(false), resource::resolveParticipants, UserTable.DEFAULT_ORDER)
+			else {
+				val condition = containsAny("skills", skills)
+				paginateResult(resource.getParticipantCount(false, condition), { resource.resolveParticipants(it, condition) }, UserTable.DEFAULT_ORDER)
+			}
 		}
 	}
 

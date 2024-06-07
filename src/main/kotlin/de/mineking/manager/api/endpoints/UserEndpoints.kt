@@ -9,6 +9,7 @@ import de.mineking.manager.data.MeetingTable
 import de.mineking.manager.data.UserTable
 import de.mineking.manager.data.ResourceType
 import de.mineking.manager.main.EmailType
+import de.mineking.manager.main.containsAny
 import de.mineking.manager.main.hashPassword
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
@@ -22,21 +23,21 @@ fun UserEndpoints() {
 		with(it) {
 			checkAuthorization(admin = true)
 
-			paginateResult(main.users.rowCount, main.users::getAll, UserTable.DEFAULT_ORDER)
+			val skills = queryParam("skills")?.split(",")?.toList()
+
+			if (skills.isNullOrEmpty()) paginateResult(main.users.rowCount, main.users::getAll, UserTable.DEFAULT_ORDER)
+			else {
+				val condition = containsAny("skills", skills)
+				paginateResult(main.users.getRowCount(condition), { main.users.selectMany(condition, it) }, UserTable.DEFAULT_ORDER)
+			}
 		}
 	}
 
 	post("csv") {
 		with(it) {
-			println("a")
-
 			checkAuthorization(admin = true)
 
-			println("b")
-
 			result(main.users.exportCSV())
-
-			println("c")
 
 			header("content-type", "csv")
 			header("content-disposition", "inline; filename=\"Nutzerliste.csv\"")

@@ -15,8 +15,11 @@ interface Resource : Identifiable {
 
 	fun getParticipants(recursive: Boolean = true): Collection<String> = main.participants.getParticipantUsers(this, recursive)
 
-	fun resolveParticipants(order: Order? = null) = main.users.getByIds(getParticipants(false), order)
-	fun getParticipantCount(recursive: Boolean = true): Int = getParticipants(recursive).size
+	fun resolveParticipants(order: Order? = null, where: Where? = null) = main.users.getByIds(getParticipants(false), order, where)
+	fun getParticipantCount(recursive: Boolean = true, where: Where? = null): Int {
+		return if (where == null) getParticipants(recursive).size
+		else resolveParticipants(null, where).size
+	}
 }
 
 enum class ResourceType(val error: ErrorResponseType, val table: (main: Main) -> ResourceTable<*>) {
