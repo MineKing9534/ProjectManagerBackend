@@ -8,6 +8,7 @@ import de.mineking.manager.api.paginateResult
 import de.mineking.manager.data.MeetingTable
 import de.mineking.manager.data.MeetingType
 import de.mineking.manager.data.ResourceType
+import de.mineking.manager.main.EmailType
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
 import java.time.Instant
@@ -49,7 +50,16 @@ fun MeetingEndpoints() {
 				checkAuthorization(admin = true)
 
 				val id = pathParam("id")
-				if (!main.meetings.delete(id)) throw ErrorResponse(ErrorResponseType.MEETING_NOT_FOUND)
+
+				val meeting = main.meetings.getById(id) ?: throw ErrorResponse(ErrorResponseType.MEETING_NOT_FOUND)
+				val team = main.teams.getById(meeting.parent) ?: throw ErrorResponse(ErrorResponseType.UNKNOWN)
+
+				main.email.sendEmail(EmailType.MEETING_DELETE, main.participants.getParticipantUsers(meeting), arrayOf(
+					team,
+					meeting
+				))
+
+				if (!meeting.delete()) throw ErrorResponse(ErrorResponseType.MEETING_NOT_FOUND)
 			}
 		}
 
@@ -63,6 +73,10 @@ fun MeetingEndpoints() {
 
 				val id = pathParam("id")
 				val meeting = main.meetings.getById(id) ?: throw ErrorResponse(ErrorResponseType.MEETING_NOT_FOUND)
+
+				main.email.sendEmail(EmailType.MEETING_UPDATE, main.participants.getParticipantUsers(meeting), arrayOf(
+					meeting
+				))
 
 				json(
 					meeting.copy(

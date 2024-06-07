@@ -7,6 +7,8 @@ import de.mineking.databaseutils.Where
 import de.mineking.javautils.ID
 import de.mineking.manager.main.DEFAULT_ID
 import de.mineking.manager.main.Main
+import org.apache.commons.io.FileUtils
+import java.io.File
 
 data class Team(
 	@Transient override val main: Main,
@@ -32,6 +34,19 @@ data class Team(
 
 interface TeamTable : ResourceTable<Team> {
 	fun create(name: String): Team = insert(Team(main, name = name))
+
+	override fun delete(id: String): Boolean {
+		val result = super.delete(id)
+
+		if(result) {
+			delete(Where.equals("parent", id))
+			main.meetings.delete(Where.equals("parent", id))
+
+			FileUtils.deleteQuietly(File("files/$id"))
+		}
+
+		return result
+	}
 
 	fun getChildren(parent: ID) = selectMany(Where.equals("parent", parent))
 

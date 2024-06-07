@@ -7,6 +7,8 @@ import de.mineking.databaseutils.Where
 import de.mineking.javautils.ID
 import de.mineking.manager.main.DEFAULT_ID
 import de.mineking.manager.main.Main
+import org.apache.commons.io.FileUtils
+import java.io.File
 import java.time.Instant
 
 data class Meeting(
@@ -38,6 +40,13 @@ interface MeetingTable : ResourceTable<Meeting> {
 	}
 
 	fun create(parent: String, name: String, time: Instant, location: String, type: MeetingType): Meeting = insert(Meeting(main, parent = parent, name = name, time = time, location = location, type = type))
+
+	override fun delete(id: String): Boolean {
+		val result = super.delete(id)
+		if(result) FileUtils.deleteQuietly(File("files/$id"))
+
+		return result
+	}
 
 	fun getMeetings(team: String, order: Order? = null) = selectMany(Where.equals("parent", team), order ?: DEFAULT_ORDER)
 }

@@ -50,10 +50,8 @@ class EmailClient(val main: Main) {
 		)
 	}
 
-	fun sendEmail(type: EmailType, users: Collection<String>) = sendEmail(type, main.users.getByIds(users))
-
-	fun sendEmail(type: EmailType, users: Collection<User>, arg: Array<Any> = emptyArray()) {
-		val recipients = users.filter { type in it.emailTypes }
+	fun sendEmail(type: EmailType, users: Collection<String>, arg: Array<Any> = emptyArray()) {
+		val recipients = main.users.getByIds(users).filter { type in it.emailTypes }
 		if (recipients.isEmpty()) return
 
 		mailer.sendMail(
@@ -87,7 +85,8 @@ enum class EmailType(val custom: Boolean = true, val title: String) {
 		override fun format(main: Main, arg: Array<Any>): String = html
 			.replace("%parent%", (arg[0] as Resource).name)
 			.replace("%name%", (arg[1] as Meeting).name)
-			.replace("%url%", "${main.config.url}/@me/${(arg[0] as Resource).resourceType.name.lowercase()}s/${(arg[0] as Resource).id}")
+			.replace("%url%", "${main.config.url}/@me/${(arg[0] as Resource).resourceType.name.lowercase()}s/${(arg[0] as Resource).id.asString()}")
+			.replace("%meeting_url%", "${main.config.url}/@me/meetings?parent=${(arg[0] as Resource).id.asString()}")
 	},
 	MEETING_UPDATE(title = "Änderungen für Treffen") {
 		//meeting
@@ -95,11 +94,12 @@ enum class EmailType(val custom: Boolean = true, val title: String) {
 			.replace("%name%", (arg[0] as Meeting).name)
 			.replace("%url%", "${main.config.url}/@me/meetings/${(arg[0] as Meeting).id.asString()}")
 	},
+
 	INFO_UPDATE(title = "Neue Informationen") {
 		//resource
 		override fun format(main: Main, arg: Array<Any>): String = html
 			.replace("%name%", (arg[0] as Resource).name)
-			.replace("%url%", "${main.config.url}/@me/${(arg[0] as Resource).resourceType.name.lowercase()}s/${(arg[0] as Resource).id}")
+			.replace("%url%", "${main.config.url}/@me/${(arg[0] as Resource).resourceType.name.lowercase()}s/${(arg[0] as Resource).id.asString()}")
 	};
 
 	val html: String = EmailType::class.java.getResource("/email/${name.lowercase()}.html")?.readText() ?: throw FileNotFoundException("Email $name")

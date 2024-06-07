@@ -5,8 +5,10 @@ import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.api.main
 import de.mineking.manager.api.paginateResult
+import de.mineking.manager.data.Resource
 import de.mineking.manager.data.ResourceType
 import de.mineking.manager.data.info
+import de.mineking.manager.main.EmailType
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.HandlerType
 import io.javalin.http.bodyAsClass
@@ -14,7 +16,6 @@ import org.apache.commons.io.FileUtils
 import java.io.File
 import java.io.FileInputStream
 import java.nio.ByteBuffer
-import java.nio.file.attribute.UserDefinedFileAttributeView
 import kotlin.io.path.getAttribute
 import kotlin.io.path.setAttribute
 
@@ -88,6 +89,8 @@ fun FileEndpoints() {
 			with(it) {
 				checkAuthorization(admin = true)
 
+				val resource = attribute<Resource>("resource")!!
+
 				val file = attribute<File>("file")!!
 				val upload = uploadedFile("file")
 
@@ -105,7 +108,16 @@ fun FileEndpoints() {
 
 					file.writeBytes(upload.content().readAllBytes())
 					file.toPath().setAttribute("user:mime-type", ByteBuffer.wrap(upload.contentType()?.toByteArray()))
-				} else if (upload == null && !file.exists()) file.mkdirs()
+
+					if(file.name == "Information") {
+						main.email.sendEmail(EmailType.INFO_UPDATE, main.participants.getParticipantUsers(resource), arrayOf(
+							resource
+						))
+					}
+				} else if (upload == null && !file.exists()) {
+					if(file.name == "Information") throw ErrorResponse(ErrorResponseType.INVALID_FILE_TYPE)
+					file.mkdirs()
+				}
 			}
 		}
 

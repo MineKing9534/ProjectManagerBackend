@@ -10,6 +10,7 @@ import de.mineking.manager.data.MeetingTable
 import de.mineking.manager.data.MeetingType
 import de.mineking.manager.data.ResourceTable
 import de.mineking.manager.data.ResourceType
+import de.mineking.manager.main.EmailType
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
 import java.time.Instant
@@ -140,7 +141,14 @@ fun TeamEndpoints() {
 					val id = pathParam("id")
 					val team = main.teams.getById(id) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
 
-					json(main.meetings.create(team.id.asString(), request.name, request.time, request.location, request.type))
+					val meeting = main.meetings.create(team.id.asString(), request.name, request.time, request.location, request.type)
+
+					main.email.sendEmail(EmailType.MEETING_CREATE, main.participants.getParticipantUsers(team), arrayOf(
+						team,
+						meeting
+					))
+
+					json(meeting)
 				}
 			}
 		}
