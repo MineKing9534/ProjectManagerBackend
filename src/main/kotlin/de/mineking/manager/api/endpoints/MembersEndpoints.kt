@@ -4,20 +4,28 @@ import de.mineking.databaseutils.Where
 import de.mineking.manager.api.*
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
+import de.mineking.manager.data.Resource
 import de.mineking.manager.data.ResourceType
 import de.mineking.manager.data.UserTable
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
 
 fun MembersEndpoints() {
-	get {
+	before {
 		with(it) {
-			checkAuthorization(admin = true)
-
 			val id = pathParam("id")
 			val type = attribute<ResourceType>("type")!!
 			val resource = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
 
+			attribute("resource", resource)
+		}
+	}
+
+	get {
+		with(it) {
+			checkAuthorization(admin = true)
+
+			val resource = attribute<Resource>("resource")!!
 			paginateResult(resource.getParticipantCount(false), resource::resolveParticipants, UserTable.DEFAULT_ORDER)
 		}
 	}
@@ -26,9 +34,7 @@ fun MembersEndpoints() {
 		with(it) {
 			checkAuthorization(admin = true)
 
-			val id = pathParam("id")
-			val type = attribute<ResourceType>("type")!!
-			val resource = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
+			val resource = attribute<Resource>("resource")!!
 
 			result(main.users.exportCSV(Where.valueContainsField("id", main.participants.getParticipantUsers(resource))))
 			header("content-type", "csv")
@@ -38,9 +44,7 @@ fun MembersEndpoints() {
 
 	put("@me") {
 		with(it) {
-			val id = pathParam("id")
-			val type = attribute<ResourceType>("type")!!
-			val resource = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
+			val resource = attribute<Resource>("resource")!!
 
 			val auth = checkAuthorization()
 
@@ -53,7 +57,7 @@ fun MembersEndpoints() {
 				val invite = main.authenticator.checkAuthorization(token, type = TokenType.INVITE)
 				val target = invite.jwt.subject
 
-				if (target != id) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
+				if (target != resource.id.asString()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
 			}
 
 			main.participants.join(auth.user.id, resource.id, attribute("type")!!)
@@ -64,11 +68,8 @@ fun MembersEndpoints() {
 		with(it) {
 			checkAuthorization(admin = true)
 
-			val id = pathParam("id")
-			val type = attribute<ResourceType>("type")!!
-			val resource = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
-
 			val user = getTarget(main.users, ErrorResponseType.USER_NOT_FOUND, "member")
+			val resource = attribute<Resource>("resource")!!
 
 			if(!main.participants.leave(user.id, resource.id)) throw ErrorResponse(ErrorResponseType.PARTICIPANT_NOT_FOUND)
 		}

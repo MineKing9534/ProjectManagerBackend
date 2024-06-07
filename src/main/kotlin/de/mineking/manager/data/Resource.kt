@@ -4,6 +4,7 @@ import de.mineking.databaseutils.Order
 import de.mineking.databaseutils.Where
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.main.Main
+import java.io.File
 
 interface Resource : Identifiable {
 	val main: Main
@@ -30,6 +31,8 @@ interface ResourceTable<T : Resource> : IdentifiableTable<T> {
 
 	override fun delete(id: String): Boolean {
 		main.participants.delete(Where.equals("parent", id))
+		File("files/$id").deleteRecursively()
+
 		return super.delete(id)
 	}
 }

@@ -33,9 +33,9 @@ fun Context.paginateResult(total: Int, getter: (order: Order) -> Collection<Any>
 }
 
 fun Context.paginateResult(elements: Collection<Comparable<*>>) = paginateResult(elements.size) { page, entriesPerPage ->
-	elements.stream().unordered()
+	elements.stream()
+		.sorted()
 		.skip((page - 1) * entriesPerPage.toLong())
 		.limit(entriesPerPage.toLong())
-		.sorted()
 		.toList()
 }

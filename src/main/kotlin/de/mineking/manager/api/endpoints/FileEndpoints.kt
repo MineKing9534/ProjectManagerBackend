@@ -1,29 +1,139 @@
 package de.mineking.manager.api.endpoints
 
+import de.mineking.manager.api.checkAuthorization
+import de.mineking.manager.api.error.ErrorResponse
+import de.mineking.manager.api.error.ErrorResponseType
+import de.mineking.manager.api.main
+import de.mineking.manager.api.paginateResult
+import de.mineking.manager.data.ResourceType
+import de.mineking.manager.data.info
 import io.javalin.apibuilder.ApiBuilder.*
+import io.javalin.http.HandlerType
+import io.javalin.http.bodyAsClass
+import org.apache.commons.io.FileUtils
+import java.io.File
+import java.io.FileInputStream
+import java.nio.ByteBuffer
+import java.nio.file.attribute.UserDefinedFileAttributeView
+import kotlin.io.path.getAttribute
+import kotlin.io.path.setAttribute
+
 
 fun FileEndpoints() {
+	before {
+		with(it) {
+			val auth = checkAuthorization()
+
+			val id = pathParam("id")
+			val type = attribute<ResourceType>("type")!!
+			val resource = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
+
+			if (!auth.user.admin && auth.user.id.asString() !in main.participants.getParticipantUsers(resource)) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+
+			attribute("resource", resource)
+
+			val folder = File("files/${ resource.id }")
+			folder.mkdirs()
+
+			attribute("folder", folder)
+		}
+	}
+
 	get {
 		with(it) {
-
+			val folder = attribute<File>("folder")
+			folder?.listFiles()?.let { paginateResult(it.map { it.info() }) }
 		}
 	}
 
-	put("{name}") {
-		with(it) {
+	path("<name>") {
+		before {
+			with(it) {
+				val folder = attribute<File>("folder")!!
+				val file = File(folder, pathParam("name"))
 
+				if(file == folder) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
+
+				if (!file.exists() && method() != HandlerType.PUT) throw ErrorResponse(ErrorResponseType.FILE_NOT_FOUND)
+				if (!file.canonicalPath.startsWith(folder.canonicalPath)) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+
+				attribute("file", file)
+			}
 		}
-	}
 
-	get("{name}") {
-		with(it) {
+		head {}
 
+		get {
+			with(it) {
+				val file = attribute<File>("file")
+				val list = file?.listFiles()
+
+				if(list != null) { paginateResult(list.map { it.info() }) }
+				else throw ErrorResponse(ErrorResponseType.INVALID_FILE_TYPE)
+			}
 		}
-	}
 
-	delete("{name}") {
-		with(it) {
+		post {
+			with(it) {
+				val file = attribute<File>("file")!!
+				if(file.isDirectory) throw ErrorResponse(ErrorResponseType.INVALID_FILE_TYPE)
 
+				result(FileInputStream(file))
+				header("Content-Disposition", "inline; filename=${file.name}")
+				header("Content-Type", file.toPath().getAttribute("user:mime-type").toString())
+			}
+		}
+
+		put {
+			with(it) {
+				checkAuthorization(admin = true)
+
+				val file = attribute<File>("file")!!
+				val upload = uploadedFile("file")
+
+				if (upload != null && (!file.exists() || file.isFile())) {
+					if (!file.exists()) {
+						file.getParentFile().mkdirs()
+						file.createNewFile()
+					}
+
+					upload.content().use { input ->
+						file.outputStream().use { output ->
+							input.copyTo(output)
+						}
+					}
+
+					file.writeBytes(upload.content().readAllBytes())
+					file.toPath().setAttribute("user:mime-type", ByteBuffer.wrap(upload.contentType()?.toByteArray()))
+				} else if (upload == null && !file.exists()) file.mkdirs()
+			}
+		}
+
+		patch {
+			with(it) {
+				data class Request(val name: String)
+
+				val request = bodyAsClass<Request>()
+
+				val folder = attribute<File>("folder")!!
+				val file = attribute<File>("file")!!
+
+				val newFile = File(file.parentFile, request.name)
+
+				if(!newFile.canonicalPath.startsWith(folder.canonicalPath)) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+
+				if(!file.renameTo(newFile)) throw ErrorResponse(ErrorResponseType.UNKNOWN)
+			}
+		}
+
+		delete {
+			with(it) {
+				checkAuthorization(admin = true)
+
+				val file = attribute<File>("file")!!
+
+				if(!FileUtils.deleteQuietly(file)) throw ErrorResponse(ErrorResponseType.FILE_NOT_FOUND)
+			}
 		}
 	}
 }
