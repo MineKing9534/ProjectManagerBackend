@@ -41,8 +41,6 @@ interface TeamTable : ResourceTable<Team> {
 		if(result) {
 			delete(Where.equals("parent", id))
 			main.meetings.delete(Where.equals("parent", id))
-
-			FileUtils.deleteQuietly(File("files/$id"))
 		}
 
 		return result
