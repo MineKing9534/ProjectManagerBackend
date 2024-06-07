@@ -54,7 +54,7 @@ interface ParticipantTable : Table<Participant> {
 		.set()
 	}
 
-	fun getDirectParticipants(parent: ID): Collection<String> = manager.driver.withHandleUnchecked { it.createQuery("select user from $name where parent = :parent")
+	fun getDirectParticipants(parent: ID): Collection<String> = manager.driver.withHandleUnchecked { it.createQuery("select \"user\" from $name where parent = :parent")
 		.bind("parent", parent.asString())
 		.mapTo(String::class.java)
 		.set()
