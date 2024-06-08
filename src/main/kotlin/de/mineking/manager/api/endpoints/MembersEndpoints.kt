@@ -88,7 +88,7 @@ fun MembersEndpoints() {
 			val user = getTarget(main.users, ErrorResponseType.USER_NOT_FOUND, "member")
 			val resource = attribute<Resource>("resource")!!
 
-			if(!main.participants.leave(user.id, resource.id)) throw ErrorResponse(ErrorResponseType.PARTICIPANT_NOT_FOUND)
+			if (!main.participants.leave(user.id, resource.id)) throw ErrorResponse(ErrorResponseType.PARTICIPANT_NOT_FOUND)
 		}
 	}
 }

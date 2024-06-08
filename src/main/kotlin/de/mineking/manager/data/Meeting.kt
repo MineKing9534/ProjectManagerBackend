@@ -7,8 +7,6 @@ import de.mineking.databaseutils.Where
 import de.mineking.javautils.ID
 import de.mineking.manager.main.DEFAULT_ID
 import de.mineking.manager.main.Main
-import org.apache.commons.io.FileUtils
-import java.io.File
 import java.time.Instant
 
 data class Meeting(

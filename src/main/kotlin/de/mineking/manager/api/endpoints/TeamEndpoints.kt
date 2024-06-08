@@ -88,7 +88,7 @@ fun TeamEndpoints() {
 						team.copy(
 							name = request.name ?: team.name,
 							parent = if (request.parent != null) {
-								if(request.parent.isEmpty()) ""
+								if (request.parent.isEmpty()) ""
 								else {
 									val temp = main.teams.getById(request.parent) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
 									if (temp.id.asString() == team.id.asString()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
@@ -143,10 +143,12 @@ fun TeamEndpoints() {
 
 					val meeting = main.meetings.create(team.id.asString(), request.name, request.time, request.location, request.type)
 
-					main.email.sendEmail(EmailType.MEETING_CREATE, main.participants.getParticipantUsers(team), arrayOf(
-						team,
-						meeting
-					))
+					main.email.sendEmail(
+						EmailType.MEETING_CREATE, main.participants.getParticipantUsers(team), arrayOf(
+							team,
+							meeting
+						)
+					)
 
 					json(meeting)
 				}

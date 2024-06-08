@@ -33,7 +33,7 @@ fun FileEndpoints() {
 
 			attribute("resource", resource)
 
-			val folder = File("files/${ resource.id }")
+			val folder = File("files/${resource.id}")
 			folder.mkdirs()
 
 			attribute("folder", folder)
@@ -53,7 +53,7 @@ fun FileEndpoints() {
 				val folder = attribute<File>("folder")!!
 				val file = File(folder, pathParam("name"))
 
-				if(file == folder) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
+				if (file == folder) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
 
 				if (!file.exists() && method() != HandlerType.PUT) throw ErrorResponse(ErrorResponseType.FILE_NOT_FOUND)
 				if (!file.canonicalPath.startsWith(folder.canonicalPath)) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
@@ -69,7 +69,7 @@ fun FileEndpoints() {
 				val file = attribute<File>("file")
 				val list = file?.listFiles()
 
-				if(list != null) { paginateResult(list.map { it.info() }) }
+				if (list != null) paginateResult(list.map { it.info() })
 				else throw ErrorResponse(ErrorResponseType.INVALID_FILE_TYPE)
 			}
 		}
@@ -77,7 +77,7 @@ fun FileEndpoints() {
 		post {
 			with(it) {
 				val file = attribute<File>("file")!!
-				if(file.isDirectory) throw ErrorResponse(ErrorResponseType.INVALID_FILE_TYPE)
+				if (file.isDirectory) throw ErrorResponse(ErrorResponseType.INVALID_FILE_TYPE)
 
 				result(FileInputStream(file))
 				header("Content-Disposition", "inline; filename=${file.name}")
@@ -109,13 +109,15 @@ fun FileEndpoints() {
 					file.writeBytes(upload.content().readAllBytes())
 					file.toPath().setAttribute("user:mime-type", ByteBuffer.wrap(upload.contentType()?.toByteArray()))
 
-					if(file.name == "Information") {
-						main.email.sendEmail(EmailType.INFO_UPDATE, main.participants.getParticipantUsers(resource), arrayOf(
-							resource
-						))
+					if (file.name == "Information") {
+						main.email.sendEmail(
+							EmailType.INFO_UPDATE, main.participants.getParticipantUsers(resource), arrayOf(
+								resource
+							)
+						)
 					}
 				} else if (upload == null && !file.exists()) {
-					if(file.name == "Information") throw ErrorResponse(ErrorResponseType.INVALID_FILE_TYPE)
+					if (file.name == "Information") throw ErrorResponse(ErrorResponseType.INVALID_FILE_TYPE)
 					file.mkdirs()
 				}
 			}
@@ -132,9 +134,9 @@ fun FileEndpoints() {
 
 				val newFile = File(file.parentFile, request.name)
 
-				if(!newFile.canonicalPath.startsWith(folder.canonicalPath)) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+				if (!newFile.canonicalPath.startsWith(folder.canonicalPath)) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
 
-				if(!file.renameTo(newFile)) throw ErrorResponse(ErrorResponseType.UNKNOWN)
+				if (!file.renameTo(newFile)) throw ErrorResponse(ErrorResponseType.UNKNOWN)
 			}
 		}
 
@@ -144,7 +146,7 @@ fun FileEndpoints() {
 
 				val file = attribute<File>("file")!!
 
-				if(!FileUtils.deleteQuietly(file)) throw ErrorResponse(ErrorResponseType.FILE_NOT_FOUND)
+				if (!FileUtils.deleteQuietly(file)) throw ErrorResponse(ErrorResponseType.FILE_NOT_FOUND)
 			}
 		}
 	}

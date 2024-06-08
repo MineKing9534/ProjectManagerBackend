@@ -25,6 +25,6 @@ fun File.info(): FileInfo {
 		hashCode(),
 		name,
 		toPath().getLastModifiedTime().toInstant(),
-		if(isDirectory) FileType.DIRECTORY else FileType.FILE
+		if (isDirectory) FileType.DIRECTORY else FileType.FILE
 	)
 }

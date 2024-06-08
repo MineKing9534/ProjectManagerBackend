@@ -35,7 +35,7 @@ interface ResourceTable<T : Resource> : IdentifiableTable<T> {
 	override fun delete(id: String): Boolean {
 		val result = super.delete(id)
 
-		if(result) {
+		if (result) {
 			main.participants.delete(Where.equals("parent", id))
 			File("files/$id").deleteRecursively()
 		}

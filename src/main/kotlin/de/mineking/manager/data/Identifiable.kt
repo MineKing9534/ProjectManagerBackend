@@ -19,9 +19,10 @@ interface IdentifiableTable<T : Identifiable> : Table<T> {
 	val main: Main get() = manager.getData<Main>("main")
 
 	fun getAll(order: Order? = null): List<T> = selectAll(order ?: DEFAULT_ORDER)
-	fun getAllIds(order: Order? = null): List<String> = manager.driver.withHandleUnchecked { it.createQuery("select id from $name ${(order ?: DEFAULT_ORDER).format()}")
-		.mapTo(String::class.java)
-		.list()
+	fun getAllIds(order: Order? = null): List<String> = manager.driver.withHandleUnchecked {
+		it.createQuery("select id from $name ${(order ?: DEFAULT_ORDER).format()}")
+			.mapTo(String::class.java)
+			.list()
 	}
 
 	fun getByIds(ids: Collection<Any>, order: Order? = null, where: Where? = null): List<T> = selectMany(Where.valueContainsField("id", ids).and(where ?: Where.empty()), order ?: DEFAULT_ORDER)

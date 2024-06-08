@@ -30,7 +30,7 @@ fun Context.checkAuthorization(admin: Boolean = false, type: TokenType = TokenTy
 	return auth
 }
 
-fun <T: Identifiable> Context.getTarget(table: IdentifiableTable<T>, error: ErrorResponseType, name: String = "id"): T {
+fun <T : Identifiable> Context.getTarget(table: IdentifiableTable<T>, error: ErrorResponseType, name: String = "id"): T {
 	val auth = checkAuthorization()
 
 	var id = pathParam(name)

@@ -7,8 +7,6 @@ import de.mineking.databaseutils.Where
 import de.mineking.javautils.ID
 import de.mineking.manager.main.DEFAULT_ID
 import de.mineking.manager.main.Main
-import org.apache.commons.io.FileUtils
-import java.io.File
 
 data class Team(
 	@Transient override val main: Main,
@@ -25,7 +23,7 @@ data class Team(
 	fun getAccessibleTeams(): Collection<Team> {
 		val children = table.getChildren(id)
 
-		return if(children.isEmpty()) emptyList()
+		return if (children.isEmpty()) emptyList()
 		else children.flatMap { it.getAccessibleTeams() + it }
 	}
 
@@ -38,7 +36,7 @@ interface TeamTable : ResourceTable<Team> {
 	override fun delete(id: String): Boolean {
 		val result = super.delete(id)
 
-		if(result) {
+		if (result) {
 			selectMany(Where.equals("parent", id)).forEach { delete(it.id.asString()) }
 			main.meetings.selectMany(Where.equals("parent", id)).forEach { main.meetings.delete(it.id.asString()) }
 		}

@@ -7,7 +7,6 @@ import de.mineking.manager.data.ResourceType
 import io.javalin.http.BadRequestResponse
 import io.javalin.http.Context
 import io.javalin.http.NotImplementedResponse
-import java.util.*
 
 fun OEmbedEndpoint(ctx: Context) = with(ctx) {
 	data class Response(val version: String = "1.0", val type: String = "link", val provider_name: String, val author_name: String, val title: String)
@@ -35,8 +34,7 @@ fun OEmbedEndpoint(ctx: Context) = with(ctx) {
 			} catch (e: ErrorResponse) {
 				Response(provider_name = main.config.info.provider, author_name = main.config.info.author, title = "Ungültige Einladung")
 			}
-		}
-		else if (url.matches("/@me/(teams|meetings)/.*".toRegex())) {
+		} else if (url.matches("/@me/(teams|meetings)/.*".toRegex())) {
 			try {
 				val typeTemp = url.split("/")[2]
 				val type = ResourceType.valueOf(typeTemp.uppercase().dropLast(1))
@@ -49,7 +47,6 @@ fun OEmbedEndpoint(ctx: Context) = with(ctx) {
 			} catch (e: ErrorResponse) {
 				Response(provider_name = main.config.info.provider, author_name = main.config.info.author, title = "Ungültige Einladung")
 			}
-		}
-		else Response(provider_name = main.config.info.provider, author_name = main.config.info.author, title = main.config.info.title)
+		} else Response(provider_name = main.config.info.provider, author_name = main.config.info.author, title = main.config.info.title)
 	)
 }

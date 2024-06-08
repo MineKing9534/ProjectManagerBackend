@@ -10,9 +10,9 @@ import com.auth0.jwt.exceptions.TokenExpiredException
 import com.auth0.jwt.interfaces.DecodedJWT
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
-import de.mineking.manager.data.User
 import de.mineking.manager.data.Resource
 import de.mineking.manager.data.ResourceType
+import de.mineking.manager.data.User
 import de.mineking.manager.main.Main
 import io.javalin.http.Context
 import io.javalin.http.InternalServerErrorResponse

@@ -1,13 +1,11 @@
 package de.mineking.manager.api.endpoints
 
-import de.mineking.databaseutils.Where
 import de.mineking.databaseutils.exception.ConflictException
 import de.mineking.manager.api.*
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
-import de.mineking.manager.data.MeetingTable
-import de.mineking.manager.data.UserTable
 import de.mineking.manager.data.ResourceType
+import de.mineking.manager.data.UserTable
 import de.mineking.manager.main.EmailType
 import de.mineking.manager.main.containsAny
 import de.mineking.manager.main.hashPassword

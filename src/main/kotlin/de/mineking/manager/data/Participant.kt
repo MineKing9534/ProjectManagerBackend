@@ -47,22 +47,26 @@ interface ParticipantTable : Table<Participant> {
 		)
 	) > 0
 
-	fun get(user: ID, resource: ID): Participant? = selectOne(Where.allOf(
-		Where.equals("user", user),
-		Where.equals("parent", resource)
-	)).orElse(null)
+	fun get(user: ID, resource: ID): Participant? = selectOne(
+		Where.allOf(
+			Where.equals("user", user),
+			Where.equals("parent", resource)
+		)
+	).orElse(null)
 
-	fun getParents(user: ID, parentType: ResourceType): Collection<String> = manager.driver.withHandleUnchecked { it.createQuery("select parent from $name where \"user\" = :user and parenttype = :parent")
-		.bind("user", user.asString())
-		.bind("parent", parentType)
-		.mapTo(String::class.java)
-		.set()
+	fun getParents(user: ID, parentType: ResourceType): Collection<String> = manager.driver.withHandleUnchecked {
+		it.createQuery("select parent from $name where \"user\" = :user and parenttype = :parent")
+			.bind("user", user.asString())
+			.bind("parent", parentType)
+			.mapTo(String::class.java)
+			.set()
 	}
 
-	fun getDirectParticipants(parent: ID): Collection<String> = manager.driver.withHandleUnchecked { it.createQuery("select \"user\" from $name where parent = :parent")
-		.bind("parent", parent.asString())
-		.mapTo(String::class.java)
-		.set()
+	fun getDirectParticipants(parent: ID): Collection<String> = manager.driver.withHandleUnchecked {
+		it.createQuery("select \"user\" from $name where parent = :parent")
+			.bind("parent", parent.asString())
+			.mapTo(String::class.java)
+			.set()
 	}
 
 	fun getParticipantUsers(parent: Resource, recursive: Boolean = true): Collection<String> {
@@ -74,9 +78,9 @@ interface ParticipantTable : Table<Participant> {
 
 	private fun getParticipantUsers(result: MutableCollection<String>, parent: Resource, recursive: Boolean) {
 		result.addAll(getDirectParticipants(parent.id))
-		if(recursive && parent.parent.isNotEmpty()) {
+		if (recursive && parent.parent.isNotEmpty()) {
 			val temp = parent.resourceType.table(main).getById(parent.parent)
-			if(temp != null) getParticipantUsers(result, temp, true)
+			if (temp != null) getParticipantUsers(result, temp, true)
 		}
 	}
 }

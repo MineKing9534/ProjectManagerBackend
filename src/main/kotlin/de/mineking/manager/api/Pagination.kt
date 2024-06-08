@@ -20,12 +20,14 @@ private fun Context.paginateResult(total: Int, elements: (Int, Int) -> Collectio
 		.check({ it == null || it in 1..totalPages }, "Invalid 'page'")
 		.get()
 
-	if(page == null) json(elements(1, Integer.MAX_VALUE))
-	else json(PaginationResult(
-		page,
-		totalPages,
-		elements.invoke(page, entriesPerPage)
-	))
+	if (page == null) json(elements(1, Integer.MAX_VALUE))
+	else json(
+		PaginationResult(
+			page,
+			totalPages,
+			elements.invoke(page, entriesPerPage)
+		)
+	)
 }
 
 fun Context.paginateResult(total: Int, getter: (order: Order) -> Collection<Any>, order: Order? = null) = paginateResult(total) { page, entriesPerPage ->

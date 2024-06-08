@@ -1,7 +1,6 @@
 package de.mineking.manager.main
 
 import de.mineking.manager.data.Meeting
-import de.mineking.manager.data.User
 import de.mineking.manager.data.Resource
 import jakarta.mail.Message
 import org.simplejavamail.api.email.Recipient

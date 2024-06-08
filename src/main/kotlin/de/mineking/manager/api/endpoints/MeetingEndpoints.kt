@@ -54,10 +54,12 @@ fun MeetingEndpoints() {
 				val meeting = main.meetings.getById(id) ?: throw ErrorResponse(ErrorResponseType.MEETING_NOT_FOUND)
 				val team = main.teams.getById(meeting.parent) ?: throw ErrorResponse(ErrorResponseType.UNKNOWN)
 
-				main.email.sendEmail(EmailType.MEETING_DELETE, main.participants.getParticipantUsers(meeting), arrayOf(
-					team,
-					meeting
-				))
+				main.email.sendEmail(
+					EmailType.MEETING_DELETE, main.participants.getParticipantUsers(meeting), arrayOf(
+						team,
+						meeting
+					)
+				)
 
 				if (!main.meetings.delete(meeting.id.asString())) throw ErrorResponse(ErrorResponseType.MEETING_NOT_FOUND)
 			}
@@ -74,9 +76,11 @@ fun MeetingEndpoints() {
 				val id = pathParam("id")
 				val meeting = main.meetings.getById(id) ?: throw ErrorResponse(ErrorResponseType.MEETING_NOT_FOUND)
 
-				main.email.sendEmail(EmailType.MEETING_UPDATE, main.participants.getParticipantUsers(meeting), arrayOf(
-					meeting
-				))
+				main.email.sendEmail(
+					EmailType.MEETING_UPDATE, main.participants.getParticipantUsers(meeting), arrayOf(
+						meeting
+					)
+				)
 
 				json(
 					meeting.copy(
