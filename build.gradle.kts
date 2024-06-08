@@ -71,7 +71,8 @@ tasks.register<Copy>("prepareEmail") {
 		expand(
 			"name" to project.findProperty("NAME"),
 			"phone" to project.findProperty("PHONE"),
-			"email" to project.findProperty("EMAIL")
+			"email" to project.findProperty("EMAIL"),
+			"url" to project.findProperty("URL")
 		)
 	}
 
