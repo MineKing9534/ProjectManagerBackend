@@ -2,6 +2,7 @@ package de.mineking.manager.main
 
 import de.mineking.manager.data.Meeting
 import de.mineking.manager.data.Resource
+import de.mineking.manager.data.User
 import jakarta.mail.Message
 import org.simplejavamail.api.email.Recipient
 import org.simplejavamail.api.mailer.Mailer
@@ -49,6 +50,18 @@ class EmailClient(val main: Main) {
 		)
 	}
 
+	fun sendPasswordResetEmail(user: User) {
+		val token = main.authenticator.generatePasswordResetToken(user.id.asString())
+
+		mailer.sendMail(
+			EmailBuilder.startingBlank()
+				.to(user.email)
+				.withSubject(EmailType.RESET_PASSWORD.title)
+				.withHTMLText(EmailType.RESET_PASSWORD.format(main, arrayOf(user.firstName, user.lastName, token)))
+				.buildEmail()
+		)
+	}
+
 	fun sendEmail(type: EmailType, users: Collection<String>, arg: Array<Any> = emptyArray()) {
 		val recipients = main.users.getByIds(users).filter { type in it.emailTypes }
 		if (recipients.isEmpty()) return
@@ -70,6 +83,11 @@ enum class EmailType(val custom: Boolean = true, val title: String) {
 			.replace("%name%", "${arg[0]} ${arg[1]}")
 			.replace("%url%", "${main.config.url}/verify?token=${arg[2]}")
 			.replace("%target%", (arg[3] as Resource).name)
+	},
+	RESET_PASSWORD(false, title = "Passwort zurücksetzten") {
+		override fun format(main: Main, arg: Array<Any>): String = html
+			.replace("%name%", "${ arg[0] } ${ arg[1] }")
+			.replace("%url%", "${main.config.url}/password?token=${arg[2]}")
 	},
 
 	MEETING_CREATE(title = "Neues Treffen") {

@@ -65,32 +65,6 @@ fun UserEndpoints() {
 		}
 	}
 
-	post("verify") {
-		with(it) {
-			val auth = checkAuthorization(type = TokenType.EMAIL)
-
-			data class Request(val password: String)
-
-			val request = bodyAsClass<Request>()
-
-			val email = auth.jwt.subject
-			val firstName = auth.jwt.getClaim("fn").asString()
-			val lastName = auth.jwt.getClaim("ln").asString()
-			val password = request.password
-
-			if (password.length < 8) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
-			if (main.users.getByEmail(email) != null) throw ErrorResponse(ErrorResponseType.USER_ALREADY_EXISTS)
-
-			val id = auth.jwt.getClaim("pi").asString()
-			val type = ResourceType.valueOf(auth.jwt.getClaim("pt").asString())
-
-			val resource = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
-
-			val user = main.users.create(firstName, lastName, email, hashPassword(password))
-			main.participants.join(user.id, resource.id, type)
-		}
-	}
-
 	put {
 		with(it) {
 			checkSuperUser()
@@ -127,6 +101,18 @@ fun UserEndpoints() {
 			).update()
 
 			json(user)
+		}
+	}
+
+	post("@me/reset-password") {
+		with(it) {
+			data class Response(val token: String)
+
+			val auth = checkAuthorization()
+
+			val token = main.authenticator.generatePasswordResetToken(auth.user.id.asString())
+
+			json(Response(token))
 		}
 	}
 

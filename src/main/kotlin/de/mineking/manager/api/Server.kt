@@ -67,13 +67,13 @@ class Server(private val main: Main) {
 		})
 
 		config.router.apiBuilder {
-			post("login", ::LoginEndpoint)
 			get("oembed", ::OEmbedEndpoint)
 
 			path("meetings", ::MeetingEndpoints)
 			path("skills", ::SkillEndpoints)
 			path("teams", ::TeamEndpoints)
 			path("users", ::UserEndpoints)
+			path("auth", ::AuthEndpoints)
 		}
 
 		config.appData(MAIN_KEY, main)

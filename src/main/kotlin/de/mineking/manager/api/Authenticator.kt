@@ -37,6 +37,10 @@ class Authenticator(private val main: Main) {
 		.withIssuer("VERIFICATION")
 		.build()
 
+	val passwordVerifier: JWTVerifier = JWT.require(algorithm)
+		.withIssuer("PASSWORD")
+		.build()
+
 	fun generateUserToken(user: User): String = JWT.create()
 		.withIssuer("USER")
 		.withSubject(user.id.asString())
@@ -60,6 +64,12 @@ class Authenticator(private val main: Main) {
 		.withExpiresAt(Instant.now().plus(Duration.ofMinutes(15)))
 		.sign(algorithm)
 
+	fun generatePasswordResetToken(user: String): String = JWT.create()
+		.withIssuer("PASSWORD")
+		.withSubject(user)
+		.withExpiresAt(Instant.now().plus(Duration.ofMinutes(15)))
+		.sign(algorithm)
+
 	fun checkAuthorization(ctx: Context, type: TokenType = TokenType.USER) = checkAuthorization(ctx.header("Authorization") ?: ctx.formParam("Authorization"), type = type)
 
 	fun checkAuthorization(token: String?, type: TokenType = TokenType.USER): AuthorizationInfo {
@@ -70,6 +80,7 @@ class Authenticator(private val main: Main) {
 					TokenType.USER -> userVerifier
 					TokenType.INVITE -> inviteVerifier
 					TokenType.EMAIL -> emailVerifier
+					TokenType.PASSWORD -> passwordVerifier
 				}
 			)
 		)
@@ -105,7 +116,8 @@ enum class TokenType {
 		}
 	},
 	INVITE,
-	EMAIL;
+	EMAIL,
+	PASSWORD;
 
 	open fun create(main: Main, jwt: DecodedJWT): AuthorizationInfo = AuthorizationInfo(main, jwt)
 }
