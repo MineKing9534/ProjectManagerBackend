@@ -31,7 +31,7 @@ data class User(
 @JvmDefaultWithCompatibility
 interface UserTable : IdentifiableTable<User> {
 	companion object {
-		val DEFAULT_ORDER = Order.ascendingBy("firstname").andAscendingBy("lastname")
+		val DEFAULT_ORDER = Order.ascendingBy("lastname").andAscendingBy("firstname")
 	}
 
 	fun getByEmail(email: String): User? = selectOne(Where.equals("email", email)).orElse(null)

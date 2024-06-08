@@ -13,7 +13,7 @@ import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
 import java.util.*
 
-fun String.isValidName(): Boolean = matches("^[a-zA-Zäöüß]{2,}$".toRegex())
+fun String.isValidName(): Boolean = matches("^[a-zA-ZÄäÖöÜüß-]{2,}$".toRegex())
 fun String.isValidEmail(): Boolean = matches("^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$".toRegex())
 
 fun UserEndpoints() {
