@@ -86,7 +86,7 @@ enum class EmailType(val custom: Boolean = true, val title: String) {
 	},
 	RESET_PASSWORD(false, title = "Passwort zurücksetzten") {
 		override fun format(main: Main, arg: Array<Any>): String = html
-			.replace("%name%", "${ arg[0] } ${ arg[1] }")
+			.replace("%name%", "${arg[0]} ${arg[1]}")
 			.replace("%url%", "${main.config.url}/password?token=${arg[2]}")
 	},
 
@@ -103,7 +103,6 @@ enum class EmailType(val custom: Boolean = true, val title: String) {
 			.replace("%parent%", (arg[0] as Resource).name)
 			.replace("%name%", (arg[1] as Meeting).name)
 			.replace("%url%", "${main.config.url}/@me/${(arg[0] as Resource).resourceType.name.lowercase()}s/${(arg[0] as Resource).id.asString()}")
-			.replace("%meeting_url%", "${main.config.url}/@me/meetings?parent=${(arg[0] as Resource).id.asString()}")
 	},
 	MEETING_UPDATE(title = "Änderungen für Treffen") {
 		//meeting

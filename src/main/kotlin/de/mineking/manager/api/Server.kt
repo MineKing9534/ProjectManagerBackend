@@ -10,7 +10,8 @@ import de.mineking.manager.data.IdentifiableTable
 import de.mineking.manager.main.JSON
 import de.mineking.manager.main.Main
 import io.javalin.Javalin
-import io.javalin.apibuilder.ApiBuilder.*
+import io.javalin.apibuilder.ApiBuilder.get
+import io.javalin.apibuilder.ApiBuilder.path
 import io.javalin.config.Key
 import io.javalin.http.Context
 import io.javalin.http.HttpResponseException

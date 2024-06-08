@@ -6,7 +6,6 @@ import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.api.main
 import de.mineking.manager.data.ResourceType
-import de.mineking.manager.main.EmailType
 import de.mineking.manager.main.hashPassword
 import de.mineking.manager.main.verifyPassword
 import io.javalin.apibuilder.ApiBuilder.post
