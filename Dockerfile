@@ -2,8 +2,8 @@ FROM eclipse-temurin:17-jdk-jammy
 
 WORKDIR /app
 
-COPY build/libs/Server-*-all.jar ./Server.jar
-COPY run/* ./
+COPY build/libs/ProjectManagerBackend-*-all.jar ./Server.jar
+COPY run_production/* ./
 
 EXPOSE 1234
 

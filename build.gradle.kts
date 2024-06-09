@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "de.mineking"
-version = "1.0.0"
+version = "2.0.0"
 
 repositories {
     mavenCentral()
@@ -52,6 +52,12 @@ kotlin {
 
 tasks.compileKotlin {
 	dependsOn("compileEmail")
+}
+
+tasks.jar {
+	manifest {
+		attributes(mapOf("Main-Class" to "de.mineking.manager.main.MainKt"))
+	}
 }
 
 tasks.register<Exec>("compileEmail") {
