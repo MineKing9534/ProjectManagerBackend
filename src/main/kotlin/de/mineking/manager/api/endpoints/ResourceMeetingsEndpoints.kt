@@ -36,7 +36,7 @@ fun ResourceMeetingsEndpoints() {
 
 	post {
 		with(it) {
-			checkAuthorization(admin = true)
+			val auth = checkAuthorization(admin = true)
 
 			data class Request(val name: String, val time: Instant, val location: String, val type: MeetingType)
 
@@ -50,6 +50,8 @@ fun ResourceMeetingsEndpoints() {
 				time = request.time,
 				location = request.location
 			)
+
+			main.participants.join(auth.user.id, meeting.id, ResourceType.MEETING)
 
 			main.email.sendEmail(
 				EmailType.MEETING_CREATE, main.participants.getParticipantUsers(resource), arrayOf(

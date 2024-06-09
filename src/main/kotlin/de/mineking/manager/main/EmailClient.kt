@@ -1,6 +1,7 @@
 package de.mineking.manager.main
 
 import de.mineking.manager.data.Meeting
+import de.mineking.manager.data.Project
 import de.mineking.manager.data.Resource
 import de.mineking.manager.data.User
 import jakarta.mail.Message
@@ -109,6 +110,20 @@ enum class EmailType(val custom: Boolean = true, val title: String) {
 		override fun format(main: Main, arg: Array<Any>): String = html
 			.replace("%name%", (arg[0] as Meeting).name)
 			.replace("%url%", "${main.config.url}/@me/meetings/${(arg[0] as Meeting).id.asString()}")
+	},
+
+	PROJECT_ADD(title = "Neues Projekt") {
+		//parent, project
+		override fun format(main: Main, arg: Array<Any>): String = html
+			.replace("%parent%", (arg[0] as Resource).name)
+			.replace("%name%", (arg[1] as Project).name)
+			.replace("%url%", "${main.config.url}/@me/projects/${(arg[1] as Project).id.asString()}")
+	},
+	PROJECT_DELETE(title = "Absage für Projekt") {
+		//parent, project
+		override fun format(main: Main, arg: Array<Any>): String = html
+			.replace("%parent%", (arg[0] as Resource).name)
+			.replace("%name%", (arg[1] as Project).name)
 	},
 
 	INFO_UPDATE(title = "Neue Informationen") {

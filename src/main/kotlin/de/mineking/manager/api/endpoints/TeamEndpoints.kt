@@ -23,14 +23,18 @@ fun TeamEndpoints() {
 
 	post {
 		with(it) {
-			checkAuthorization(admin = true)
+			val auth = checkAuthorization(admin = true)
 
 			data class Request(val name: String)
 
 			val request = bodyAsClass<Request>()
 
 			try {
-				json(main.teams.create(request.name))
+				val team = main.teams.create(request.name)
+
+				main.participants.join(auth.user.id, team.id, ResourceType.TEAM)
+
+				json(team)
 			} catch (_: ConflictException) {
 				throw ErrorResponse(ErrorResponseType.TEAM_ALREADY_EXISTS)
 			}
@@ -130,7 +134,7 @@ fun TeamEndpoints() {
 
 			post {
 				with(it) {
-					checkAuthorization(admin = true)
+					val auth = checkAuthorization(admin = true)
 
 					data class Request(val name: String, val location: String, val time: Instant)
 
@@ -140,11 +144,22 @@ fun TeamEndpoints() {
 					val team = main.teams.getById(id) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
 
 					try {
-						json(main.projects.create(parent = team,
+						val project = main.projects.create(parent = team,
 							name = request.name,
 							location = request.location,
 							time = request.time
-						))
+						)
+
+						main.participants.join(auth.user.id, project.id, ResourceType.PROJECT)
+
+						main.email.sendEmail(
+							EmailType.PROJECT_ADD, main.participants.getParticipantUsers(team), arrayOf(
+								team,
+								project
+							)
+						)
+
+						json(project)
 					} catch (_: ConflictException) {
 						throw ErrorResponse(ErrorResponseType.PROJECT_ALREADY_EXISTS)
 					}

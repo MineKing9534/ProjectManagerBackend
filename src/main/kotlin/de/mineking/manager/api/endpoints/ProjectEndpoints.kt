@@ -6,8 +6,6 @@ import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.api.main
 import de.mineking.manager.api.paginateResult
-import de.mineking.manager.data.MeetingTable
-import de.mineking.manager.data.MeetingType
 import de.mineking.manager.data.ResourceTable
 import de.mineking.manager.data.ResourceType
 import de.mineking.manager.main.EmailType
@@ -26,18 +24,22 @@ fun ProjectEndpoints() {
 
 	post {
 		with(it) {
-			checkAuthorization(admin = true)
+			val auth = checkAuthorization(admin = true)
 
 			data class Request(val name: String, val location: String, val time: Instant)
 
 			val request = bodyAsClass<Request>()
 
 			try {
-				json(main.projects.create(
+				val project = main.projects.create(
 					name = request.name,
 					location = request.location,
 					time = request.time
-				))
+				)
+
+				main.participants.join(auth.user.id, project.id, ResourceType.PROJECT)
+
+				json(project)
 			} catch (_: ConflictException) {
 				throw ErrorResponse(ErrorResponseType.PROJECT_ALREADY_EXISTS)
 			}
@@ -73,7 +75,19 @@ fun ProjectEndpoints() {
 				checkAuthorization(admin = true)
 
 				val id = pathParam("id")
-				if (!main.projects.delete(id)) throw ErrorResponse(ErrorResponseType.PROJECT_NOT_FOUND)
+
+				val project = main.projects.getById(id) ?: throw ErrorResponse(ErrorResponseType.PROJECT_NOT_FOUND)
+				if (!main.projects.delete(project.id.asString())) throw ErrorResponse(ErrorResponseType.PROJECT_NOT_FOUND)
+
+				val parent = project.getParent()
+				if (parent != null) {
+					main.email.sendEmail(
+						EmailType.PROJECT_DELETE, main.participants.getParticipantUsers(parent), arrayOf(
+							parent,
+							project
+						)
+					)
+				}
 			}
 		}
 
@@ -87,28 +101,42 @@ fun ProjectEndpoints() {
 
 				val id = pathParam("id")
 
-				val project = main.projects.getById(id) ?: throw ErrorResponse(ErrorResponseType.PROJECT_NOT_FOUND)
+				var project = main.projects.getById(id) ?: throw ErrorResponse(ErrorResponseType.PROJECT_NOT_FOUND)
 				val meeting = main.meetings.getById(id) ?: throw ErrorResponse(ErrorResponseType.UNKNOWN)
 
 				try {
-					json(
-						project.copy(
-							name = request.name ?: project.name,
-							parent = if (request.parent != null) {
-								if (request.parent.isEmpty()) ""
-								else {
-									val temp = main.teams.getById(request.parent) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
-									"TEAM:${ temp.id.asString() }"
-								}
-							} else meeting.parent
-						).update()
-					)
+					val oldParent = project.parent
+
+					project = project.copy(
+						name = request.name ?: project.name,
+						parent = if (request.parent != null) {
+							if (request.parent.isEmpty()) ""
+							else {
+								val temp = main.teams.getById(request.parent) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
+								"TEAM:${ temp.id.asString() }"
+							}
+						} else meeting.parent
+					).update()
+
+					json(project)
 
 					meeting.copy(
 						name = request.name ?: project.name,
 						location = request.location ?: meeting.location,
 						time = request.time ?: meeting.time
 					).update()
+
+					if(project.parent != oldParent) {
+						val parent = project.getParent()
+						if (parent != null) {
+							main.email.sendEmail(
+								EmailType.PROJECT_ADD, main.participants.getParticipantUsers(parent), arrayOf(
+									parent,
+									project
+								)
+							)
+						}
+					}
 				} catch (_: ConflictException) {
 					throw ErrorResponse(ErrorResponseType.PROJECT_ALREADY_EXISTS)
 				}
