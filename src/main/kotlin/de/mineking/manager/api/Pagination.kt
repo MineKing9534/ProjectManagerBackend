@@ -8,7 +8,8 @@ const val ENTRIES_PER_PAGE = 15
 
 data class PaginationResult(
 	val page: Int,
-	val total: Int,
+	val totalPages: Int,
+	val totalEntries: Int,
 	val data: Collection<Any>
 )
 
@@ -26,6 +27,7 @@ private fun Context.paginateResult(total: Int, elements: (Int, Int) -> Collectio
 		PaginationResult(
 			page,
 			totalPages,
+			total,
 			elements.invoke(page, entriesPerPage)
 		)
 	)
