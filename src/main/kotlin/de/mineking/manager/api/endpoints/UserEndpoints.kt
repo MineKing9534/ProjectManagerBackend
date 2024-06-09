@@ -83,7 +83,7 @@ fun UserEndpoints() {
 
 	patch("@me") {
 		with(it) {
-			data class UpdateRequest(val firstName: String?, val lastName: String?, val emailTypes: EnumSet<EmailType>?)
+			data class UpdateRequest(val firstName: String?, val lastName: String?, val info: String?, val emailTypes: EnumSet<EmailType>?)
 
 			val request = bodyAsClass<UpdateRequest>()
 
@@ -97,6 +97,7 @@ fun UserEndpoints() {
 			user.copy(
 				firstName = request.firstName ?: user.firstName,
 				lastName = request.lastName ?: user.lastName,
+				info = request.info ?: user.info,
 				emailTypes = request.emailTypes ?: user.emailTypes
 			).update()
 

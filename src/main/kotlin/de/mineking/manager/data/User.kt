@@ -19,6 +19,7 @@ data class User(
 	@Column val admin: Boolean = false,
 	@Column val firstName: String = "",
 	@Column val lastName: String = "",
+	@Column val info: String = "",
 	@Column(unique = true) val email: String = "",
 	@Transient @Column val password: String = "",
 	@Column val skills: List<String> = emptyList(),
