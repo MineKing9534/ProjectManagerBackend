@@ -29,11 +29,11 @@ fun FileEndpoints() {
 			val type = attribute<ResourceType>("type")!!
 			val resource = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
 
-			if (!auth.user.admin && auth.user.id.asString() !in main.participants.getParticipantUsers(resource)) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+			if (!auth.user.admin && !resource.canBeAccessed(auth.user.id.asString())) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
 
 			attribute("resource", resource)
 
-			val folder = File("files/${resource.id}")
+			val folder = File("files/${resource.id.asString()}")
 			folder.mkdirs()
 
 			attribute("folder", folder)

@@ -6,10 +6,7 @@ import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.api.main
 import de.mineking.manager.api.paginateResult
-import de.mineking.manager.data.MeetingTable
-import de.mineking.manager.data.MeetingType
-import de.mineking.manager.data.ResourceTable
-import de.mineking.manager.data.ResourceType
+import de.mineking.manager.data.*
 import de.mineking.manager.main.EmailType
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
@@ -48,6 +45,7 @@ fun TeamEndpoints() {
 		}
 
 		path("files", ::FileEndpoints)
+		path("meetings", ::ResourceMeetingsEndpoints)
 		path("users", ::MembersEndpoints)
 
 		get {
@@ -57,7 +55,7 @@ fun TeamEndpoints() {
 				val id = pathParam("id")
 				val team = main.teams.getById(id) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
 
-				if (!auth.user.admin && auth.user.id.asString() !in main.participants.getParticipantUsers(team)) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+				if (!auth.user.admin && !team.canBeAccessed(auth.user.id.asString())) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
 
 				json(team)
 			}
@@ -93,7 +91,7 @@ fun TeamEndpoints() {
 									val temp = main.teams.getById(request.parent) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
 									if (temp.id.asString() == team.id.asString()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
 
-									temp.id.asString()
+									"TEAM:${ temp.id.asString() }"
 								}
 							} else team.parent
 						).update()
@@ -116,7 +114,7 @@ fun TeamEndpoints() {
 			}
 		}
 
-		path("meetings") {
+		path("projects") {
 			get {
 				with(it) {
 					val auth = checkAuthorization()
@@ -124,9 +122,9 @@ fun TeamEndpoints() {
 					val id = pathParam("id")
 					val team = main.teams.getById(id) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
 
-					if (!auth.user.admin && auth.user.id.asString() !in main.participants.getParticipantUsers(team)) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+					if (!auth.user.admin && !team.canBeAccessed(auth.user.id.asString())) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
 
-					paginateResult(team.getMeetingCount(), team::getMeetings, MeetingTable.DEFAULT_ORDER)
+					paginateResult(team.getProjectCount(), team::getProjects, ResourceTable.DEFAULT_ORDER)
 				}
 			}
 
@@ -134,23 +132,22 @@ fun TeamEndpoints() {
 				with(it) {
 					checkAuthorization(admin = true)
 
-					data class Request(val name: String, val time: Instant, val location: String, val type: MeetingType)
+					data class Request(val name: String, val location: String, val time: Instant)
 
 					val request = bodyAsClass<Request>()
 
 					val id = pathParam("id")
 					val team = main.teams.getById(id) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
 
-					val meeting = main.meetings.create(team.id.asString(), request.name, request.time, request.location, request.type)
-
-					main.email.sendEmail(
-						EmailType.MEETING_CREATE, main.participants.getParticipantUsers(team), arrayOf(
-							team,
-							meeting
-						)
-					)
-
-					json(meeting)
+					try {
+						json(main.projects.create(parent = team,
+							name = request.name,
+							location = request.location,
+							time = request.time
+						))
+					} catch (_: ConflictException) {
+						throw ErrorResponse(ErrorResponseType.PROJECT_ALREADY_EXISTS)
+					}
 				}
 			}
 		}

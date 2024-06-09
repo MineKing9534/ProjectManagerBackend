@@ -39,7 +39,7 @@ fun MeetingEndpoints() {
 				val id = pathParam("id")
 				val meeting = main.meetings.getById(id) ?: throw ErrorResponse(ErrorResponseType.MEETING_NOT_FOUND)
 
-				if (!auth.user.admin && auth.user.id.asString() !in main.participants.getParticipantUsers(meeting)) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+				if (!auth.user.admin && !meeting.canBeAccessed(auth.user.id.asString())) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
 
 				json(meeting)
 			}
@@ -52,11 +52,13 @@ fun MeetingEndpoints() {
 				val id = pathParam("id")
 
 				val meeting = main.meetings.getById(id) ?: throw ErrorResponse(ErrorResponseType.MEETING_NOT_FOUND)
-				val team = main.teams.getById(meeting.parent) ?: throw ErrorResponse(ErrorResponseType.UNKNOWN)
+				val resource = meeting.getParent() ?: throw ErrorResponse(ErrorResponseType.UNKNOWN)
+
+				if (meeting.parent.contains(id)) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
 
 				main.email.sendEmail(
 					EmailType.MEETING_DELETE, main.participants.getParticipantUsers(meeting), arrayOf(
-						team,
+						resource,
 						meeting
 					)
 				)
@@ -75,6 +77,8 @@ fun MeetingEndpoints() {
 
 				val id = pathParam("id")
 				val meeting = main.meetings.getById(id) ?: throw ErrorResponse(ErrorResponseType.MEETING_NOT_FOUND)
+
+				if (meeting.parent.contains(id)) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
 
 				main.email.sendEmail(
 					EmailType.MEETING_UPDATE, main.participants.getParticipantUsers(meeting), arrayOf(

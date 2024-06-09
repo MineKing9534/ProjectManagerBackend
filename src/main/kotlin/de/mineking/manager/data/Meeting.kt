@@ -37,7 +37,8 @@ interface MeetingTable : ResourceTable<Meeting> {
 		val DEFAULT_ORDER = Order.ascendingBy("time")
 	}
 
-	fun create(parent: String, name: String, time: Instant, location: String, type: MeetingType): Meeting = insert(Meeting(main, parent = parent, name = name, time = time, location = location, type = type))
+	fun create(parent: Resource, name: String, time: Instant, location: String, type: MeetingType): Meeting = insert(Meeting(main, parent = "${ parent.resourceType }:${ parent.id.asString() }", name = name, time = time, location = location, type = type))
 
-	fun getMeetings(team: String, order: Order? = null) = selectMany(Where.equals("parent", team), order ?: DEFAULT_ORDER)
+	fun getMeetings(parent: String, type: ResourceType, order: Order? = null) = selectMany(Where.equals("parent", "${ type }:${ parent }"), order ?: DEFAULT_ORDER)
+	fun getMeetingCount(parent: Resource) = getRowCount(Where.equals("parent", "${ parent.resourceType }:${ parent.id.asString() }"))
 }

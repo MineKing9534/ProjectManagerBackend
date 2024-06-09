@@ -73,6 +73,7 @@ class Server(private val main: Main) {
 			path("meetings", ::MeetingEndpoints)
 			path("skills", ::SkillEndpoints)
 			path("teams", ::TeamEndpoints)
+			path("projects", ::ProjectEndpoints)
 			path("users", ::UserEndpoints)
 			path("auth", ::AuthEndpoints)
 		}

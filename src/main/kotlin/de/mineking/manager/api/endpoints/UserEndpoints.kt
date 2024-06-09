@@ -191,11 +191,27 @@ fun UserEndpoints() {
 				val user = getTarget(main.users, ErrorResponseType.USER_NOT_FOUND)
 
 				val teams = main.teams.getUserTeams(user.id)
-				val teamMeetings = teams.flatMap { main.meetings.getMeetings(it.id.asString()) }
+				val teamMeetings = teams.flatMap { it.getMeetings() }
+
+				val projects = teams.flatMap { it.getProjects() }.map { it.id.asString() } + main.participants.getParents(user.id, ResourceType.PROJECT)
+				val projectMeetings = projects.flatMap { main.meetings.getMeetings(it, ResourceType.PROJECT) }
 
 				val meetings = main.participants.getParents(user.id, ResourceType.MEETING)
 
-				paginateResult(teamMeetings + main.meetings.getByIds(meetings))
+				paginateResult(teamMeetings + projectMeetings + main.meetings.getByIds(meetings))
+			}
+		}
+
+		get("projects") {
+			with(it) {
+				val user = getTarget(main.users, ErrorResponseType.USER_NOT_FOUND)
+
+				val teams = main.teams.getUserTeams(user.id)
+				val teamProjects = teams.flatMap { it.getProjects() }
+
+				val projects = main.participants.getParents(user.id, ResourceType.PROJECT)
+
+				paginateResult(teamProjects + main.projects.getByIds(projects))
 			}
 		}
 	}

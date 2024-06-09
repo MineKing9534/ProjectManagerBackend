@@ -54,10 +54,14 @@ interface ParticipantTable : Table<Participant> {
 		)
 	).orElse(null)
 
-	fun getParents(user: ID, parentType: ResourceType): Collection<String> = manager.driver.withHandleUnchecked {
-		it.createQuery("select parent from $name where \"user\" = :user and parenttype = :parent")
-			.bind("user", user.asString())
-			.bind("parent", parentType)
+	fun getParents(user: ID, parentType: ResourceType) = getParents(user, Where.equals("parenttype", parentType))
+
+	fun getParents(user: ID, where: Where): Collection<String> = manager.driver.withHandleUnchecked {
+		val condition = where.and(Where.equals("user", user))
+
+		it.createQuery("select parent from $name <where>")
+			.define("where", condition.format())
+			.bindMap(condition.formatValues(this))
 			.mapTo(String::class.java)
 			.set()
 	}
@@ -79,7 +83,7 @@ interface ParticipantTable : Table<Participant> {
 	private fun getParticipantUsers(result: MutableCollection<String>, parent: Resource, recursive: Boolean) {
 		result.addAll(getDirectParticipants(parent.id))
 		if (recursive && parent.parent.isNotEmpty()) {
-			val temp = parent.resourceType.table(main).getById(parent.parent)
+			val temp = parent.getParent()
 			if (temp != null) getParticipantUsers(result, temp, true)
 		}
 	}

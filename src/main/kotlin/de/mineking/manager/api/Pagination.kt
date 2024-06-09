@@ -1,6 +1,7 @@
 package de.mineking.manager.api
 
 import de.mineking.databaseutils.Order
+import de.mineking.manager.data.Identifiable
 import io.javalin.http.Context
 
 const val ENTRIES_PER_PAGE = 15
@@ -34,10 +35,10 @@ fun Context.paginateResult(total: Int, getter: (order: Order) -> Collection<Any>
 	getter((order ?: Order.empty()).offset((page - 1) * entriesPerPage).limit(entriesPerPage))
 }
 
-fun Context.paginateResult(elements: Collection<Comparable<*>>) = paginateResult(elements.size) { page, entriesPerPage ->
-	elements.stream()
+fun <T> Context.paginateResult(elements: Collection<T>) where T : Comparable<T>, T : Identifiable = paginateResult(elements.size) { page, entriesPerPage ->
+	elements.distinctBy { it.id.asString() }
 		.sorted()
-		.skip((page - 1) * entriesPerPage.toLong())
-		.limit(entriesPerPage.toLong())
+		.drop((page - 1) * entriesPerPage)
+		.take(entriesPerPage)
 		.toList()
 }
