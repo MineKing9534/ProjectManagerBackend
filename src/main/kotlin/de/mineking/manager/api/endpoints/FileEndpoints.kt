@@ -12,7 +12,10 @@ import de.mineking.manager.main.EmailType
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.HandlerType
 import io.javalin.http.bodyAsClass
+import jakarta.activation.FileDataSource
 import org.apache.commons.io.FileUtils
+import org.apache.tika.mime.MimeTypes
+import org.simplejavamail.api.email.AttachmentResource
 import java.io.File
 import java.io.FileInputStream
 import java.nio.ByteBuffer
@@ -111,9 +114,9 @@ fun FileEndpoints() {
 
 					if (file.name == "Information") {
 						main.email.sendEmail(
-							EmailType.INFO_UPDATE, main.participants.getParticipantUsers(resource), arrayOf(
-								resource
-							)
+							EmailType.INFO_UPDATE, main.participants.getParticipantUsers(resource),
+							arrayOf(resource),
+							listOf(AttachmentResource("Information${ MimeTypes.getDefaultMimeTypes().forName(upload.contentType()).extension }", FileDataSource(file)))
 						)
 					}
 				} else if (upload == null && !file.exists()) {

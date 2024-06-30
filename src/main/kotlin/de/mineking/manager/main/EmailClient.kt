@@ -4,7 +4,9 @@ import de.mineking.manager.data.Meeting
 import de.mineking.manager.data.Project
 import de.mineking.manager.data.Resource
 import de.mineking.manager.data.User
+import jakarta.activation.DataSource
 import jakarta.mail.Message
+import org.simplejavamail.api.email.AttachmentResource
 import org.simplejavamail.api.email.Recipient
 import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.api.mailer.config.TransportStrategy
@@ -63,7 +65,7 @@ class EmailClient(val main: Main) {
 		)
 	}
 
-	fun sendEmail(type: EmailType, users: Collection<String>, arg: Array<Any> = emptyArray()) {
+	fun sendEmail(type: EmailType, users: Collection<String>, arg: Array<Any> = emptyArray(), attachments: List<AttachmentResource> = listOf()) {
 		val recipients = main.users.getByIds(users).filter { type in it.emailTypes }
 		if (recipients.isEmpty()) return
 
@@ -72,6 +74,7 @@ class EmailClient(val main: Main) {
 				.bcc(recipients.map { Recipient("${it.firstName} ${it.lastName}", it.email, Message.RecipientType.BCC) })
 				.withSubject(type.title)
 				.withHTMLText(type.format(main, arg))
+				.withAttachments(attachments)
 				.buildEmail()
 		)
 	}

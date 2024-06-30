@@ -28,6 +28,7 @@ dependencies {
 	implementation("io.github.cdimascio:java-dotenv:5.2.2")
 	implementation("com.google.code.gson:gson:2.10.1")
 	implementation("commons-io:commons-io:2.16.1")
+	implementation("org.apache.tika:tika-core:2.9.2")
 
 	implementation("ch.qos.logback:logback-classic:1.5.6")
 
