@@ -19,6 +19,7 @@ import org.simplejavamail.api.email.AttachmentResource
 import java.io.File
 import java.io.FileInputStream
 import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 import kotlin.io.path.getAttribute
 import kotlin.io.path.setAttribute
 
@@ -84,7 +85,7 @@ fun FileEndpoints() {
 
 				result(FileInputStream(file))
 				header("Content-Disposition", "inline; filename=${file.name}")
-				header("Content-Type", file.toPath().getAttribute("user:mime-type").toString())
+				header("Content-Type", (file.toPath().getAttribute("user:mime-type") as ByteArray).toString(StandardCharsets.UTF_8))
 			}
 		}
 
