@@ -83,7 +83,7 @@ fun UserEndpoints() {
 
 	patch("@me") {
 		with(it) {
-			data class UpdateRequest(val firstName: String?, val lastName: String?, val info: String?, val emailTypes: EnumSet<EmailType>?)
+			data class UpdateRequest(val firstName: String?, val lastName: String?, val emailTypes: EnumSet<EmailType>?)
 
 			val request = bodyAsClass<UpdateRequest>()
 
@@ -97,7 +97,6 @@ fun UserEndpoints() {
 			user.copy(
 				firstName = request.firstName ?: user.firstName,
 				lastName = request.lastName ?: user.lastName,
-				info = request.info ?: user.info,
 				emailTypes = request.emailTypes ?: user.emailTypes
 			).update()
 
@@ -129,6 +128,37 @@ fun UserEndpoints() {
 			with(it) {
 				val user = getTarget(main.users, ErrorResponseType.USER_NOT_FOUND)
 				user.delete()
+			}
+		}
+
+		path("inputs") {
+			get {
+				with(it) {
+					val user = getTarget(main.users, ErrorResponseType.USER_NOT_FOUND)
+					json(user.inputs)
+				}
+			}
+
+			post {
+				with(it) {
+					val user = getTarget(main.users, ErrorResponseType.USER_NOT_FOUND)
+
+					data class Request(val values: Map<String, Any>)
+
+					val request = bodyAsClass<Request>()
+
+					request.values.forEach { (id, value) ->
+						val input = main.inputs.getById(id) ?: throw ErrorResponse(ErrorResponseType.INPUT_NOT_FOUND)
+						if (!input.type.validate(value, input.config)) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
+					}
+
+					user.inputs.putAll(request.values)
+					user.inputs.keys.retainAll(main.inputs.getAll().map { it.id.asString() }.toSet())
+
+					user.update()
+
+					json(user.inputs)
+				}
 			}
 		}
 

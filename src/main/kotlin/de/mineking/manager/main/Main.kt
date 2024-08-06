@@ -22,6 +22,7 @@ import java.time.Instant
 import kotlin.jvm.internal.Reflection
 import kotlin.reflect.KClass
 import kotlin.reflect.full.memberProperties
+import kotlin.reflect.typeOf
 
 fun hashPassword(password: String) = Password.hash(password)
 	.addRandomSalt()
@@ -46,6 +47,7 @@ class Main(val config: Config, val credentials: Dotenv) {
 	val teams: TeamTable
 	val projects: ProjectTable
 	val users: UserTable
+	val inputs: InputTable
 
 	init {
 		this.database.putData("main", this)
@@ -56,6 +58,7 @@ class Main(val config: Config, val credentials: Dotenv) {
 		this.teams = database.getTable(Team::class.java) { Team(this) }.name("teams").table(TeamTable::class.java).create()
 		this.projects = database.getTable(Project::class.java) { Project(this) }.name("projects").table(ProjectTable::class.java).create()
 		this.users = database.getTable(User::class.java) { User(this) }.name("users").table(UserTable::class.java).create()
+		this.inputs = database.getTable(Input::class.java) { Input(this) }.name("inputs").table(InputTable::class.java).create()
 	}
 
 	fun start() = server.start()

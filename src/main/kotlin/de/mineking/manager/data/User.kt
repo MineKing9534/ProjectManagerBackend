@@ -1,9 +1,6 @@
 package de.mineking.manager.data
 
-import de.mineking.databaseutils.Column
-import de.mineking.databaseutils.DataClass
-import de.mineking.databaseutils.Order
-import de.mineking.databaseutils.Where
+import de.mineking.databaseutils.*
 import de.mineking.javautils.ID
 import de.mineking.manager.main.DEFAULT_ID
 import de.mineking.manager.main.EmailType
@@ -19,11 +16,11 @@ data class User(
 	@Column val admin: Boolean = false,
 	@Column val firstName: String = "",
 	@Column val lastName: String = "",
-	@Column val info: String = "",
 	@Column(unique = true) val email: String = "",
 	@Transient @Column val password: String = "",
 	@Column val skills: List<String> = emptyList(),
-	@Column val emailTypes: EnumSet<EmailType> = EnumSet.copyOf(EmailType.entries.filter { it.custom })
+	@Column val emailTypes: EnumSet<EmailType> = EnumSet.copyOf(EmailType.entries.filter { it.custom }),
+	@Json @Column val inputs: MutableMap<String, Any> = hashMapOf(),
 ) : DataClass<User>, Identifiable {
 	override fun getTable() = main.users
 	override fun hashCode(): Int = Objects.hash(email, password)

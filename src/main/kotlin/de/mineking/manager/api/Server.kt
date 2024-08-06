@@ -75,12 +75,16 @@ class Server(private val main: Main) {
 		config.router.apiBuilder {
 			get("oembed", ::OEmbedEndpoint)
 
+
+			path("users", ::UserEndpoints)
+			path("auth", ::AuthEndpoints)
+
+			path("inputs", ::InputEndpoints)
+
 			path("meetings", ::MeetingEndpoints)
 			path("skills", ::SkillEndpoints)
 			path("teams", ::TeamEndpoints)
 			path("projects", ::ProjectEndpoints)
-			path("users", ::UserEndpoints)
-			path("auth", ::AuthEndpoints)
 		}
 
 		config.appData(MAIN_KEY, main)
