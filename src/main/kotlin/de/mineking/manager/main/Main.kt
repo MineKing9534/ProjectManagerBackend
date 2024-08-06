@@ -50,12 +50,12 @@ class Main(val config: Config, val credentials: Dotenv) {
 	init {
 		this.database.putData("main", this)
 
-		this.meetings = database.getTable(MeetingTable::class.java, Meeting::class.java, { Meeting(this) }, "meetings").createTable() as MeetingTable
-		this.participants = database.getTable(ParticipantTable::class.java, Participant::class.java, { Participant(this) }, "participants").createTable() as ParticipantTable
-		this.skills = database.getTable(SkillTable::class.java, Skill::class.java, { Skill(this) }, "skills").createTable() as SkillTable
-		this.teams = database.getTable(TeamTable::class.java, Team::class.java, { Team(this) }, "teams").createTable() as TeamTable
-		this.projects = database.getTable(ProjectTable::class.java, Project::class.java, { Project(this) }, "projects").createTable() as ProjectTable
-		this.users = database.getTable(UserTable::class.java, User::class.java, { User(this) }, "users").createTable() as UserTable
+		this.meetings = database.getTable(Meeting::class.java) { Meeting(this) }.name("meetings").table(MeetingTable::class.java).create()
+		this.participants = database.getTable(Participant::class.java) { Participant(this) }.table(ParticipantTable::class.java).name("participants").create()
+		this.skills = database.getTable(Skill::class.java) { Skill(this) }.name("skills").table(SkillTable::class.java).create()
+		this.teams = database.getTable(Team::class.java) { Team(this) }.name("teams").table(TeamTable::class.java).create()
+		this.projects = database.getTable(Project::class.java) { Project(this) }.name("projects").table(ProjectTable::class.java).create()
+		this.users = database.getTable(User::class.java) { User(this) }.name("users").table(UserTable::class.java).create()
 	}
 
 	fun start() = server.start()

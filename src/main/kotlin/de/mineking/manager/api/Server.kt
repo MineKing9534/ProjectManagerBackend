@@ -1,7 +1,6 @@
 package de.mineking.manager.api
 
 import com.google.gson.JsonSyntaxException
-import de.mineking.databaseutils.DatabaseManager.logger
 import de.mineking.manager.api.endpoints.*
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
@@ -18,6 +17,8 @@ import io.javalin.http.HttpResponseException
 import io.javalin.http.InternalServerErrorResponse
 import io.javalin.json.JsonMapper
 import io.javalin.validation.ValidationException
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.lang.reflect.Type
 
 
@@ -48,6 +49,10 @@ fun Context.checkSuperUser() {
 }
 
 class Server(private val main: Main) {
+	companion object {
+		val logger: Logger = LoggerFactory.getLogger(Server::class.java)
+	}
+
 	private val server: Javalin = Javalin.create { config ->
 		config.showJavalinBanner = false
 
