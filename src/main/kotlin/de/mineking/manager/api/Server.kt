@@ -81,8 +81,8 @@ class Server(private val main: Main) {
 
 			path("inputs", ::InputEndpoints)
 
-			path("meetings", ::MeetingEndpoints)
 			path("skills", ::SkillEndpoints)
+			path("meetings", ::MeetingEndpoints)
 			path("teams", ::TeamEndpoints)
 			path("projects", ::ProjectEndpoints)
 		}

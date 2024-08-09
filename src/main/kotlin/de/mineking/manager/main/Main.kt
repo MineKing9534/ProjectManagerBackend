@@ -44,6 +44,7 @@ class Main(val config: Config, val credentials: Dotenv) {
 	val meetings: MeetingTable
 	val participants: ParticipantTable
 	val skills: SkillTable
+	val skillGroups: SkillGroupTable
 	val teams: TeamTable
 	val projects: ProjectTable
 	val users: UserTable
@@ -55,6 +56,7 @@ class Main(val config: Config, val credentials: Dotenv) {
 		this.meetings = database.getTable(Meeting::class.java) { Meeting(this) }.name("meetings").table(MeetingTable::class.java).create()
 		this.participants = database.getTable(Participant::class.java) { Participant(this) }.table(ParticipantTable::class.java).name("participants").create()
 		this.skills = database.getTable(Skill::class.java) { Skill(this) }.name("skills").table(SkillTable::class.java).create()
+		this.skillGroups = database.getTable(SkillGroup::class.java) { SkillGroup(this) }.name("skill_groups").table(SkillGroupTable::class.java).create()
 		this.teams = database.getTable(Team::class.java) { Team(this) }.name("teams").table(TeamTable::class.java).create()
 		this.projects = database.getTable(Project::class.java) { Project(this) }.name("projects").table(ProjectTable::class.java).create()
 		this.users = database.getTable(User::class.java) { User(this) }.name("users").table(UserTable::class.java).create()

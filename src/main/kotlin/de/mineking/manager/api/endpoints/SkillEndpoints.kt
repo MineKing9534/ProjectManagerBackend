@@ -10,6 +10,8 @@ import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
 
 fun SkillEndpoints() {
+	path("groups", ::SkillGroupEndpoints)
+
 	get {
 		with(it) {
 			checkAuthorization()
@@ -21,12 +23,18 @@ fun SkillEndpoints() {
 		with(it) {
 			checkAuthorization(admin = true)
 
-			data class Request(val name: String)
+			data class Request(val name: String, val group: String?)
 
 			val request = bodyAsClass<Request>()
 
 			try {
-				json(main.skills.create(request.name))
+				json(main.skills.create(
+					name = request.name,
+					group = if (request.group.isNullOrEmpty()) "" else {
+						val group = main.skillGroups.getById(request.group) ?: throw ErrorResponse(ErrorResponseType.SKILL_GROUP_NOT_FOUND)
+						group.id.asString()
+					}
+				))
 			} catch (_: ConflictException) {
 				throw ErrorResponse(ErrorResponseType.SKILL_ALREADY_EXISTS)
 			}
@@ -52,14 +60,23 @@ fun SkillEndpoints() {
 			with(it) {
 				checkAuthorization(admin = true)
 
-				data class Request(val name: String)
+				data class Request(val name: String?, val group: String?)
 
 				val request = bodyAsClass<Request>()
 
 				val skill = main.skills.getById(pathParam("id")) ?: throw ErrorResponse(ErrorResponseType.SKILL_NOT_FOUND)
 
 				try {
-					json(skill.copy(name = request.name).update())
+					json(skill.copy(
+						name = request.name ?: skill.name,
+						group = if (request.group != null) {
+							if (request.group.isBlank()) ""
+							else {
+								val group = main.skillGroups.getById(request.group) ?: throw ErrorResponse(ErrorResponseType.SKILL_GROUP_NOT_FOUND)
+								group.id.asString()
+							}
+						} else skill.group
+					).update())
 				} catch (_: ConflictException) {
 					throw ErrorResponse(ErrorResponseType.SKILL_ALREADY_EXISTS)
 				}

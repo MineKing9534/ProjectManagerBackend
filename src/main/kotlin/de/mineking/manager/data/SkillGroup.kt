@@ -7,20 +7,19 @@ import de.mineking.manager.main.DEFAULT_ID
 import de.mineking.manager.main.Main
 import org.jdbi.v3.core.kotlin.useHandleUnchecked
 
-data class Skill(
+data class SkillGroup(
 	@Transient val main: Main,
 	@Column(key = true) override val id: ID = DEFAULT_ID,
-	@Column(unique = true) val name: String = "",
-	@Column val group: String = ""
-) : DataClass<Skill>, Identifiable {
-	override fun getTable() = main.skills
+	@Column(unique = true) val name: String = ""
+) : DataClass<SkillGroup>, Identifiable {
+	override fun getTable() = main.skillGroups
 }
 
-interface SkillTable : IdentifiableTable<Skill> {
-	fun create(name: String, group: String): Skill = insert(Skill(main, name = name, group = group))
+interface SkillGroupTable : IdentifiableTable<SkillGroup> {
+	fun create(name: String): SkillGroup = insert(SkillGroup(main, name = name))
 	override fun delete(id: String): Boolean {
 		manager.driver.useHandleUnchecked {
-			it.createUpdate("update users set skills = array_remove(skills, :id)")
+			it.createUpdate("update skills set \"group\" = '' where \"group\" = :id")
 				.bind("id", id)
 				.execute()
 		}
