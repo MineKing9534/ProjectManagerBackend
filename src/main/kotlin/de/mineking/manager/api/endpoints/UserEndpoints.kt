@@ -94,13 +94,13 @@ fun UserEndpoints() {
 			if (request.lastName != null && !request.lastName.isValidName()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
 			if (request.emailTypes != null && !request.emailTypes.all { it.custom }) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
 
-			user.copy(
-				firstName = request.firstName ?: user.firstName,
-				lastName = request.lastName ?: user.lastName,
-				emailTypes = request.emailTypes ?: user.emailTypes
-			).update()
-
-			json(user)
+			json(
+				user.copy(
+					firstName = request.firstName ?: user.firstName,
+					lastName = request.lastName ?: user.lastName,
+					emailTypes = request.emailTypes ?: user.emailTypes
+				).update()
+			)
 		}
 	}
 

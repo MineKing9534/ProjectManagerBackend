@@ -22,7 +22,6 @@ import java.time.Instant
 import kotlin.jvm.internal.Reflection
 import kotlin.reflect.KClass
 import kotlin.reflect.full.memberProperties
-import kotlin.reflect.typeOf
 
 fun hashPassword(password: String) = Password.hash(password)
 	.addRandomSalt()
