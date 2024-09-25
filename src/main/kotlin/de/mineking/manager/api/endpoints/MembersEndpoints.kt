@@ -83,8 +83,6 @@ fun MembersEndpoints() {
 
 	delete("{member}") {
 		with(it) {
-			checkAuthorization(admin = true)
-
 			val user = getTarget(main.users, ErrorResponseType.USER_NOT_FOUND, "member")
 			val resource = attribute<Resource>("resource")!!
 
