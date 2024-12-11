@@ -19,7 +19,7 @@ dependencies {
 	implementation("de.mineking:JavaUtils:1.9.0")
 	implementation("de.mineking:DatabaseUtils:1.5.0")
 
-	implementation("io.javalin:javalin:6.2.0")
+	implementation("io.javalin:javalin:6.3.0")
 	implementation("org.simplejavamail:simple-java-mail:8.10.1")
 
 	implementation("com.auth0:java-jwt:4.4.0")
