@@ -1,12 +1,12 @@
 package de.mineking.manager.api.endpoints
 
-import de.mineking.databaseutils.exception.ConflictException
 import de.mineking.manager.api.checkAuthorization
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.api.main
 import de.mineking.manager.api.paginateResult
-import de.mineking.manager.data.*
+import de.mineking.manager.data.ResourceTable
+import de.mineking.manager.data.ResourceType
 import de.mineking.manager.main.EmailType
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.http.bodyAsClass
@@ -17,7 +17,7 @@ fun TeamEndpoints() {
 		with(it) {
 			checkAuthorization(admin = true)
 
-			paginateResult(main.teams.rowCount, main.teams::getAll, ResourceTable.DEFAULT_ORDER)
+			paginateResult(main.teams.selectRowCount(), main.teams::getAll, ResourceTable.DEFAULT_ORDER)
 		}
 	}
 
@@ -29,15 +29,12 @@ fun TeamEndpoints() {
 
 			val request = bodyAsClass<Request>()
 
-			try {
-				val team = main.teams.create(request.name)
+			val result = main.teams.create(request.name)
+			if (result.uniqueViolation) throw ErrorResponse(ErrorResponseType.TEAM_ALREADY_EXISTS)
 
-				main.participants.join(auth.user.id, team.id, ResourceType.TEAM)
-
-				json(team)
-			} catch (_: ConflictException) {
-				throw ErrorResponse(ErrorResponseType.TEAM_ALREADY_EXISTS)
-			}
+			val team = result.getOrThrow()
+			main.participants.join(auth.user().id, team.id, ResourceType.TEAM)
+			json(team)
 		}
 	}
 
@@ -59,7 +56,7 @@ fun TeamEndpoints() {
 				val id = pathParam("id")
 				val team = main.teams.getById(id) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
 
-				if (!auth.user.admin && !team.canBeAccessed(auth.user.id.asString())) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+				if (!auth.user().admin && !team.canBeAccessed(auth.user().id.asString())) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
 
 				json(team)
 			}
@@ -85,24 +82,21 @@ fun TeamEndpoints() {
 				val id = pathParam("id")
 				val team = main.teams.getById(id) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
 
-				try {
-					json(
-						team.copy(
-							name = request.name ?: team.name,
-							parent = if (request.parent != null) {
-								if (request.parent.isEmpty()) ""
-								else {
-									val temp = main.teams.getById(request.parent) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
-									if (temp.id.asString() == team.id.asString()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
+				val result = team.copy(
+					name = request.name ?: team.name,
+					parent = if (request.parent != null) {
+						if (request.parent.isEmpty()) ""
+						else {
+							val temp = main.teams.getById(request.parent) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
+							if (temp.id.asString() == team.id.asString()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
 
-									"TEAM:${ temp.id.asString() }"
-								}
-							} else team.parent
-						).update()
-					)
-				} catch (_: ConflictException) {
-					throw ErrorResponse(ErrorResponseType.TEAM_ALREADY_EXISTS)
-				}
+							"TEAM:${ temp.id.asString() }"
+						}
+					} else team.parent
+				).update()
+
+				if (result.uniqueViolation) throw ErrorResponse(ErrorResponseType.TEAM_ALREADY_EXISTS)
+				json(result.getOrThrow())
 			}
 		}
 
@@ -126,9 +120,9 @@ fun TeamEndpoints() {
 					val id = pathParam("id")
 					val team = main.teams.getById(id) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
 
-					if (!auth.user.admin && !team.canBeAccessed(auth.user.id.asString())) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+					if (!auth.user().admin && !team.canBeAccessed(auth.user().id.asString())) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
 
-					paginateResult(team.getProjectCount(), team::getProjects, ResourceTable.DEFAULT_ORDER)
+					paginateResult(team.getProjectCount(), { order, offset, limit -> team.getProjects(order, offset, limit).list() }, ResourceTable.DEFAULT_ORDER)
 				}
 			}
 
@@ -143,26 +137,25 @@ fun TeamEndpoints() {
 					val id = pathParam("id")
 					val team = main.teams.getById(id) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
 
-					try {
-						val project = main.projects.create(parent = team,
-							name = request.name,
-							location = request.location,
-							time = request.time
+					val result = main.projects.create(parent = team,
+						name = request.name,
+						location = request.location,
+						time = request.time
+					)
+
+					if (result.uniqueViolation) throw ErrorResponse(ErrorResponseType.PROJECT_ALREADY_EXISTS)
+					val project = result.getOrThrow()
+
+					main.participants.join(auth.user().id, project.id, ResourceType.PROJECT)
+
+					main.email.sendEmail(
+						EmailType.PROJECT_ADD, main.participants.getParticipantUsers(team), arrayOf(
+							team,
+							project
 						)
+					)
 
-						main.participants.join(auth.user.id, project.id, ResourceType.PROJECT)
-
-						main.email.sendEmail(
-							EmailType.PROJECT_ADD, main.participants.getParticipantUsers(team), arrayOf(
-								team,
-								project
-							)
-						)
-
-						json(project)
-					} catch (_: ConflictException) {
-						throw ErrorResponse(ErrorResponseType.PROJECT_ALREADY_EXISTS)
-					}
+					json(project)
 				}
 			}
 		}

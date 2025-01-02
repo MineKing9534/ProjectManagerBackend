@@ -6,7 +6,7 @@ import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.data.User
 import de.mineking.manager.main.Main
 
-class AuthorizationInfo(val main: Main, val jwt: DecodedJWT, private val _user: User? = null) {
-	val isUser: Boolean get() = _user != null
-	val user: User get() = _user ?: throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+class AuthorizationInfo(val main: Main, val jwt: DecodedJWT, private val user: User? = null) {
+	fun isUser() = user != null
+	fun user() = user ?: throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
 }

@@ -1,6 +1,5 @@
 package de.mineking.manager.api.endpoints
 
-import de.mineking.databaseutils.exception.ConflictException
 import de.mineking.manager.api.checkAuthorization
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
@@ -27,17 +26,16 @@ fun SkillEndpoints() {
 
 			val request = bodyAsClass<Request>()
 
-			try {
-				json(main.skills.create(
-					name = request.name,
-					group = if (request.group.isNullOrEmpty()) "" else {
-						val group = main.skillGroups.getById(request.group) ?: throw ErrorResponse(ErrorResponseType.SKILL_GROUP_NOT_FOUND)
-						group.id.asString()
-					}
-				))
-			} catch (_: ConflictException) {
-				throw ErrorResponse(ErrorResponseType.SKILL_ALREADY_EXISTS)
-			}
+			val result = main.skills.create(
+				name = request.name,
+				group = if (request.group.isNullOrEmpty()) "" else {
+					val group = main.skillGroups.getById(request.group) ?: throw ErrorResponse(ErrorResponseType.SKILL_GROUP_NOT_FOUND)
+					group.id.asString()
+				}
+			)
+
+			if (result.uniqueViolation) throw ErrorResponse(ErrorResponseType.SKILL_ALREADY_EXISTS)
+			json(result.getOrThrow())
 		}
 	}
 
@@ -66,20 +64,19 @@ fun SkillEndpoints() {
 
 				val skill = main.skills.getById(pathParam("id")) ?: throw ErrorResponse(ErrorResponseType.SKILL_NOT_FOUND)
 
-				try {
-					json(skill.copy(
-						name = request.name ?: skill.name,
-						group = if (request.group != null) {
-							if (request.group.isBlank()) ""
-							else {
-								val group = main.skillGroups.getById(request.group) ?: throw ErrorResponse(ErrorResponseType.SKILL_GROUP_NOT_FOUND)
-								group.id.asString()
-							}
-						} else skill.group
-					).update())
-				} catch (_: ConflictException) {
-					throw ErrorResponse(ErrorResponseType.SKILL_ALREADY_EXISTS)
-				}
+				val result = skill.copy(
+					name = request.name ?: skill.name,
+					group = if (request.group != null) {
+						if (request.group.isBlank()) ""
+						else {
+							val group = main.skillGroups.getById(request.group) ?: throw ErrorResponse(ErrorResponseType.SKILL_GROUP_NOT_FOUND)
+							group.id.asString()
+						}
+					} else skill.group
+				).update()
+
+				if (result.uniqueViolation) throw ErrorResponse(ErrorResponseType.SKILL_ALREADY_EXISTS)
+				json(result.getOrThrow())
 			}
 		}
 	}

@@ -29,22 +29,22 @@ class Authenticator(private val main: Main) {
 		.withIssuer("USER")
 		.build()
 
-	val inviteVerifier: JWTVerifier = JWT.require(algorithm)
+	private val inviteVerifier: JWTVerifier = JWT.require(algorithm)
 		.withIssuer("INVITE")
 		.build()
 
-	val emailVerifier: JWTVerifier = JWT.require(algorithm)
+	private val emailVerifier: JWTVerifier = JWT.require(algorithm)
 		.withIssuer("VERIFICATION")
 		.build()
 
-	val passwordVerifier: JWTVerifier = JWT.require(algorithm)
+	private val passwordVerifier: JWTVerifier = JWT.require(algorithm)
 		.withIssuer("PASSWORD")
 		.build()
 
 	fun generateUserToken(user: User): String = JWT.create()
 		.withIssuer("USER")
 		.withSubject(user.id.asString())
-		.withClaim("ver", user.hashCode())
+		.withClaim("ver", user.credentialsHash())
 		.withExpiresAt(Instant.now().plus(Duration.ofHours(4)))
 		.sign(algorithm)
 
@@ -72,19 +72,16 @@ class Authenticator(private val main: Main) {
 
 	fun checkAuthorization(ctx: Context, type: TokenType = TokenType.USER) = checkAuthorization(ctx.header("Authorization") ?: ctx.formParam("Authorization"), type = type)
 
-	fun checkAuthorization(token: String?, type: TokenType = TokenType.USER): AuthorizationInfo {
-		return type.create(
-			main,
-			token.verify(
-				when (type) {
-					TokenType.USER -> userVerifier
-					TokenType.INVITE -> inviteVerifier
-					TokenType.EMAIL -> emailVerifier
-					TokenType.PASSWORD -> passwordVerifier
-				}
-			)
+	fun checkAuthorization(token: String?, type: TokenType = TokenType.USER): AuthorizationInfo = type.create(main,
+		token.verify(
+			when (type) {
+				TokenType.USER -> userVerifier
+				TokenType.INVITE -> inviteVerifier
+				TokenType.EMAIL -> emailVerifier
+				TokenType.PASSWORD -> passwordVerifier
+			}
 		)
-	}
+	)
 
 	private fun String?.verify(verifier: JWTVerifier): DecodedJWT {
 		if (this.isNullOrBlank()) throw ErrorResponse(ErrorResponseType.MISSING_TOKEN)
@@ -110,7 +107,7 @@ enum class TokenType {
 			val id = jwt.subject
 			val user = main.users.getById(id) ?: throw ErrorResponse(ErrorResponseType.USER_NOT_FOUND)
 
-			if (jwt.getClaim("ver").asInt() != user.hashCode()) throw ErrorResponse(ErrorResponseType.TOKEN_EXPIRED)
+			if (jwt.getClaim("ver").asInt() != user.credentialsHash()) throw ErrorResponse(ErrorResponseType.TOKEN_EXPIRED)
 
 			return AuthorizationInfo(main, jwt, user)
 		}

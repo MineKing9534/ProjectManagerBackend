@@ -27,7 +27,7 @@ val Context.main get() = this.appData(MAIN_KEY)
 
 fun Context.checkAuthorization(admin: Boolean = false, type: TokenType = TokenType.USER): AuthorizationInfo {
 	val auth = this.main.authenticator.checkAuthorization(this, type = type)
-	if (admin && !auth.user.admin) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+	if (admin && !auth.user().admin) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
 
 	return auth
 }
@@ -36,9 +36,9 @@ fun <T : Identifiable> Context.getTarget(table: IdentifiableTable<T>, error: Err
 	val auth = checkAuthorization()
 
 	var id = pathParam(name)
-	if (id == "@me") id = auth.user.id.asString()
+	if (id == "@me") id = auth.user().id.asString()
 
-	if (!auth.user.admin && id != auth.user.id.asString()) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+	if (!auth.user().admin && id != auth.user().id.asString()) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
 
 	return table.getById(id) ?: throw ErrorResponse(error)
 }
@@ -75,7 +75,6 @@ class Server(private val main: Main) {
 		config.router.apiBuilder {
 			get("oembed", ::OEmbedEndpoint)
 
-
 			path("users", ::UserEndpoints)
 			path("auth", ::AuthEndpoints)
 
@@ -91,6 +90,12 @@ class Server(private val main: Main) {
 	}
 
 	init {
+		server.after {
+			with(it) {
+				if (result() == null) result("{}")
+			}
+		}
+
 		server.exception(JsonSyntaxException::class.java) { _, _ -> throw ErrorResponse(ErrorResponseType.INVALID_REQUEST) }
 		server.exception(ValidationException::class.java) { _, _ -> throw ErrorResponse(ErrorResponseType.INVALID_REQUEST) }
 

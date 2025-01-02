@@ -8,7 +8,10 @@ import com.google.gson.reflect.TypeToken
 import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonWriter
 import com.password4j.Password
-import de.mineking.databaseutils.DatabaseManager
+import de.mineking.database.NamingStrategy
+import de.mineking.database.vendors.postgres.PostgresConnection
+import de.mineking.database.vendors.postgres.PostgresMappers
+import de.mineking.database.vendors.postgres.PostgresType
 import de.mineking.javautils.ID
 import de.mineking.manager.api.Authenticator
 import de.mineking.manager.api.Server
@@ -31,10 +34,11 @@ fun verifyPassword(hash: String, password: String) = Password.check(password, ha
 
 class Main(val config: Config, val credentials: Dotenv) {
 	private val server = Server(this)
-	private val database = DatabaseManager(
-		"jdbc:postgresql://" + credentials["DATABASE_HOST"],
-		credentials["DATABASE_USER"] ?: throw NullPointerException("DATABASE_USER required"),
-		credentials["DATABASE_PASSWORD"] ?: throw NullPointerException("DATABASE_PASSWORD required")
+	private val database = PostgresConnection(
+		credentials["DATABASE_HOST"] ?: error("DATABASE_HOST required"),
+		credentials["DATABASE_USER"] ?: error("DATABASE_USER required"),
+		credentials["DATABASE_PASSWORD"] ?: error("DATABASE_PASSWORD required"),
+		defaultNamingStrategy = NamingStrategy.LOWERCASE //Required for compatibility
 	)
 
 	val authenticator = Authenticator(this)
@@ -50,16 +54,19 @@ class Main(val config: Config, val credentials: Dotenv) {
 	val inputs: InputTable
 
 	init {
-		this.database.putData("main", this)
+		database.data["main"] = this
+		database.typeMappers += idTypeMapper()
 
-		this.meetings = database.getTable(Meeting::class.java) { Meeting(this) }.name("meetings").table(MeetingTable::class.java).create()
-		this.participants = database.getTable(Participant::class.java) { Participant(this) }.table(ParticipantTable::class.java).name("participants").create()
-		this.skills = database.getTable(Skill::class.java) { Skill(this) }.name("skills").table(SkillTable::class.java).create()
-		this.skillGroups = database.getTable(SkillGroup::class.java) { SkillGroup(this) }.name("skill_groups").table(SkillGroupTable::class.java).create()
-		this.teams = database.getTable(Team::class.java) { Team(this) }.name("teams").table(TeamTable::class.java).create()
-		this.projects = database.getTable(Project::class.java) { Project(this) }.name("projects").table(ProjectTable::class.java).create()
-		this.users = database.getTable(User::class.java) { User(this) }.name("users").table(UserTable::class.java).create()
-		this.inputs = database.getTable(Input::class.java) { Input(this) }.name("inputs").table(InputTable::class.java).create()
+		PostgresMappers
+
+		meetings = database.getTable<_, MeetingTable>(name = "meetings", create = true) { Meeting(this) }
+		participants = database.getTable<_, ParticipantTable>(name = "participants", create = true) { Participant(this) }
+		skills = database.getTable<_, SkillTable>(name = "skills", create = true) { Skill(this) }
+		skillGroups = database.getTable<_, SkillGroupTable>(name = "skill_groups", create = true) { SkillGroup(this) }
+		teams = database.getTable<_, TeamTable>(name = "teams", create = true) { Team(this) }
+		projects = database.getTable<_, ProjectTable>(name = "projects", create = true) { Project(this) }
+		users = database.getTable<_, UserTable>(name = "users", create = true) { User(this) }
+		inputs = database.getTable<_, InputTable>(name = "inputs", create = true) { Input(this) }
 	}
 
 	fun start() = server.start()

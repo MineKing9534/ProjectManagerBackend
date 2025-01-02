@@ -1,11 +1,14 @@
 package de.mineking.manager.api.endpoints
 
-import de.mineking.databaseutils.Where
+import de.mineking.database.property
+import de.mineking.database.value
+import de.mineking.database.vendors.postgres.contains
 import de.mineking.manager.api.*
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.data.Resource
 import de.mineking.manager.data.ResourceType
+import de.mineking.manager.data.User
 import de.mineking.manager.data.UserTable
 import de.mineking.manager.main.containsAny
 import io.javalin.apibuilder.ApiBuilder.*
@@ -29,10 +32,10 @@ fun MembersEndpoints() {
 			val resource = attribute<Resource>("resource")!!
 			val skills = queryParam("skills")?.split(",")?.toList()
 
-			if (skills.isNullOrEmpty()) paginateResult(resource.getParticipantCount(false), resource::resolveParticipants, UserTable.DEFAULT_ORDER)
+			if (skills.isNullOrEmpty()) paginateResult(resource.getParticipantCount(false), { order, offset, limit -> resource.resolveParticipants(null, order, offset, limit) }, UserTable.DEFAULT_ORDER)
 			else {
-				val condition = containsAny("skills", skills)
-				paginateResult(resource.getParticipantCount(false, condition), { resource.resolveParticipants(it, condition) }, UserTable.DEFAULT_ORDER)
+				val condition = property(User::skills) containsAny value(skills)
+				paginateResult(resource.getParticipantCount(false, condition), { order, offset, limit -> resource.resolveParticipants(condition, order, offset, limit) }, UserTable.DEFAULT_ORDER)
 			}
 		}
 	}
@@ -43,7 +46,7 @@ fun MembersEndpoints() {
 
 			val resource = attribute<Resource>("resource")!!
 
-			result(main.users.exportCSV(Where.valueContainsField("id", main.participants.getParticipantUsers(resource))))
+			result(main.users.exportCSV(value(main.participants.getParticipantUsers(resource)) contains property(User::id)))
 			header("content-type", "csv")
 			header("content-disposition", "inline; filename=\"Nutzerliste_${resource.name}.csv\"")
 		}
@@ -55,7 +58,7 @@ fun MembersEndpoints() {
 
 			val auth = checkAuthorization()
 
-			if (!auth.user.admin) {
+			if (!auth.user().admin) {
 				data class Request(val invite: String)
 
 				val request = bodyAsClass<Request>()
@@ -67,7 +70,7 @@ fun MembersEndpoints() {
 				if (target != resource.id.asString()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
 			}
 
-			main.participants.join(auth.user.id, resource.id, attribute("type")!!)
+			main.participants.join(auth.user().id, resource.id, attribute("type")!!)
 		}
 	}
 
@@ -77,7 +80,7 @@ fun MembersEndpoints() {
 
 			val resource = attribute<Resource>("resource")!!
 
-			main.participants.get(auth.user.id, resource.id) ?: throw ErrorResponse(ErrorResponseType.PARTICIPANT_NOT_FOUND)
+			main.participants.get(auth.user().id, resource.id) ?: throw ErrorResponse(ErrorResponseType.PARTICIPANT_NOT_FOUND)
 		}
 	}
 

@@ -1,9 +1,7 @@
 package de.mineking.manager.data
 
-import de.mineking.databaseutils.Order
-import de.mineking.databaseutils.Where
+import de.mineking.database.*
 import de.mineking.manager.api.error.ErrorResponseType
-import de.mineking.manager.data.MeetingTable.Companion.DEFAULT_ORDER
 import de.mineking.manager.main.Main
 import java.io.File
 
@@ -32,18 +30,31 @@ interface Resource : Identifiable {
 		else false
 	}
 
-	fun getParticipants(recursive: Boolean = true): Collection<String> = main.participants.getParticipantUsers(this, recursive)
+	fun getParticipants(recursive: Boolean = true): Set<String> = main.participants.getParticipantUsers(this, recursive)
 
-	fun resolveParticipants(order: Order? = null, where: Where? = null) = main.users.getByIds(getParticipants(false), order, where)
 	fun getParticipantCount(recursive: Boolean = true, where: Where? = null): Int {
 		return if (where == null) getParticipants(recursive).size
-		else resolveParticipants(null, where).size
+		else resolveParticipants(where, null).size
 	}
+
+	fun resolveParticipants(where: Where? = null, order: Order? = null, offset: Int? = null, limit: Int? = null) = main.users.getByIds(
+		getParticipants(false),
+		where = where,
+		order = order,
+		offset = offset,
+		limit = limit
+	)
 }
 
 interface MeetingResource : Resource {
-	fun getMeetings(order: Order? = null) = main.meetings.getMeetings(id.asString(), resourceType, order)
 	fun getMeetingCount() = main.meetings.getMeetingCount(this)
+	fun getMeetings(order: Order? = null, offset: Int? = null, limit: Int? = null) = main.meetings.getMeetings(
+		parent = id.asString(),
+		type = resourceType,
+		order = order,
+		offset = offset,
+		limit = limit
+	)
 }
 
 enum class ResourceType(val error: ErrorResponseType, val table: (main: Main) -> ResourceTable<*>) {
@@ -54,14 +65,14 @@ enum class ResourceType(val error: ErrorResponseType, val table: (main: Main) ->
 
 interface ResourceTable<T : Resource> : IdentifiableTable<T> {
 	companion object {
-		val DEFAULT_ORDER = Order.ascendingBy("name")
+		val DEFAULT_ORDER = ascendingBy("name")
 	}
 
 	override fun delete(id: String): Boolean {
 		val result = super.delete(id)
 
 		if (result) {
-			main.participants.delete(Where.equals("parent", id))
+			main.participants.delete(where = property(Participant::parent) isEqualTo value(id))
 			File("files/$id").deleteRecursively()
 		}
 

@@ -1,6 +1,5 @@
 package de.mineking.manager.api.endpoints
 
-import de.mineking.databaseutils.exception.ConflictException
 import de.mineking.manager.api.checkAuthorization
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
@@ -18,7 +17,7 @@ fun ProjectEndpoints() {
 		with(it) {
 			checkAuthorization(admin = true)
 
-			paginateResult(main.projects.rowCount, main.projects::getAll, ResourceTable.DEFAULT_ORDER)
+			paginateResult(main.projects.selectRowCount(), main.projects::getAll, ResourceTable.DEFAULT_ORDER)
 		}
 	}
 
@@ -30,19 +29,17 @@ fun ProjectEndpoints() {
 
 			val request = bodyAsClass<Request>()
 
-			try {
-				val project = main.projects.create(
-					name = request.name,
-					location = request.location,
-					time = request.time
-				)
+			val result = main.projects.create(
+				name = request.name,
+				location = request.location,
+				time = request.time
+			)
 
-				main.participants.join(auth.user.id, project.id, ResourceType.PROJECT)
+			if (result.uniqueViolation) throw ErrorResponse(ErrorResponseType.PROJECT_ALREADY_EXISTS)
+			val project = result.getOrThrow()
 
-				json(project)
-			} catch (_: ConflictException) {
-				throw ErrorResponse(ErrorResponseType.PROJECT_ALREADY_EXISTS)
-			}
+			main.participants.join(auth.user().id, project.id, ResourceType.PROJECT)
+			json(project)
 		}
 	}
 
@@ -64,7 +61,7 @@ fun ProjectEndpoints() {
 				val id = pathParam("id")
 				val project = main.projects.getById(id) ?: throw ErrorResponse(ErrorResponseType.PROJECT_NOT_FOUND)
 
-				if (!auth.user.admin && !project.canBeAccessed(auth.user.id.asString())) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+				if (!auth.user().admin && !project.canBeAccessed(auth.user().id.asString())) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
 
 				json(project)
 			}
@@ -104,41 +101,40 @@ fun ProjectEndpoints() {
 				var project = main.projects.getById(id) ?: throw ErrorResponse(ErrorResponseType.PROJECT_NOT_FOUND)
 				val meeting = main.meetings.getById(id) ?: throw ErrorResponse(ErrorResponseType.UNKNOWN)
 
-				try {
-					val oldParent = project.parent
+				val oldParent = project.parent
 
-					project = project.copy(
-						name = request.name ?: project.name,
-						parent = if (request.parent != null) {
-							if (request.parent.isEmpty()) ""
-							else {
-								val temp = main.teams.getById(request.parent) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
-								"TEAM:${ temp.id.asString() }"
-							}
-						} else meeting.parent
-					).update()
-
-					json(project)
-
-					meeting.copy(
-						name = request.name ?: project.name,
-						location = request.location ?: meeting.location,
-						time = request.time ?: meeting.time
-					).update()
-
-					if(project.parent != oldParent) {
-						val parent = project.getParent()
-						if (parent != null) {
-							main.email.sendEmail(
-								EmailType.PROJECT_ADD, main.participants.getParticipantUsers(parent), arrayOf(
-									parent,
-									project
-								)
-							)
+				val result = project.copy(
+					name = request.name ?: project.name,
+					parent = if (request.parent != null) {
+						if (request.parent.isEmpty()) ""
+						else {
+							val temp = main.teams.getById(request.parent) ?: throw ErrorResponse(ErrorResponseType.TEAM_NOT_FOUND)
+							"TEAM:${ temp.id.asString() }"
 						}
+					} else meeting.parent
+				).update()
+
+				if (result.uniqueViolation)throw ErrorResponse(ErrorResponseType.PROJECT_ALREADY_EXISTS)
+				project = result.getOrThrow()
+
+				json(project)
+
+				meeting.copy(
+					name = request.name ?: project.name,
+					location = request.location ?: meeting.location,
+					time = request.time ?: meeting.time
+				).update()
+
+				if (project.parent != oldParent) {
+					val parent = project.getParent()
+					if (parent != null) {
+						main.email.sendEmail(
+							EmailType.PROJECT_ADD, main.participants.getParticipantUsers(parent), arrayOf(
+								parent,
+								project
+							)
+						)
 					}
-				} catch (_: ConflictException) {
-					throw ErrorResponse(ErrorResponseType.PROJECT_ALREADY_EXISTS)
 				}
 			}
 		}

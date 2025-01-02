@@ -1,28 +1,22 @@
 package de.mineking.manager.data
 
-import de.mineking.databaseutils.Column
-import de.mineking.databaseutils.DataClass
+import de.mineking.database.*
 import de.mineking.javautils.ID
 import de.mineking.manager.main.DEFAULT_ID
 import de.mineking.manager.main.Main
-import org.jdbi.v3.core.kotlin.useHandleUnchecked
 
 data class SkillGroup(
 	@Transient val main: Main,
-	@Column(key = true) override val id: ID = DEFAULT_ID,
-	@Column(unique = true) val name: String = ""
-) : DataClass<SkillGroup>, Identifiable {
-	override fun getTable() = main.skillGroups
+	@Key @Column override val id: ID = DEFAULT_ID,
+	@Unique @Column val name: String = ""
+) : DataObject<SkillGroup>, Identifiable {
+	@Transient override val table = main.skillGroups
 }
 
 interface SkillGroupTable : IdentifiableTable<SkillGroup> {
-	fun create(name: String): SkillGroup = insert(SkillGroup(main, name = name))
+	@Insert fun create(@Parameter name: String): UpdateResult<SkillGroup>
 	override fun delete(id: String): Boolean {
-		manager.driver.useHandleUnchecked {
-			it.createUpdate("update skills set \"group\" = '' where \"group\" = :id")
-				.bind("id", id)
-				.execute()
-		}
+		main.skills.update(property(Skill::group) to value(""), where = property(Skill::group) isEqualTo value(id))
 		return super.delete(id)
 	}
 }

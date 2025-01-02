@@ -45,15 +45,16 @@ fun AuthEndpoints() {
 			val password = request.password
 
 			validatePassword(password)
-			if (main.users.getByEmail(email) != null) throw ErrorResponse(ErrorResponseType.USER_ALREADY_EXISTS)
 
 			val id = auth.jwt.getClaim("pi").asString()
 			val type = ResourceType.valueOf(auth.jwt.getClaim("pt").asString())
 
 			val resource = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
 
-			val user = main.users.create(firstName, lastName, email, hashPassword(password))
-			main.participants.join(user.id, resource.id, type)
+			val result = main.users.create(firstName, lastName, email, hashPassword(password))
+			if (result.uniqueViolation) throw ErrorResponse(ErrorResponseType.USER_ALREADY_EXISTS)
+
+			main.participants.join(result.getOrThrow().id, resource.id, type)
 		}
 	}
 

@@ -1,11 +1,9 @@
 package de.mineking.manager.data
 
-import de.mineking.databaseutils.Order
-import de.mineking.databaseutils.Table
-import de.mineking.databaseutils.Where
+import de.mineking.database.*
+import de.mineking.database.vendors.postgres.contains
 import de.mineking.javautils.ID
 import de.mineking.manager.main.Main
-import org.jdbi.v3.core.kotlin.withHandleUnchecked
 
 interface Identifiable {
 	val id: ID
@@ -13,19 +11,21 @@ interface Identifiable {
 
 interface IdentifiableTable<T : Identifiable> : Table<T> {
 	companion object {
-		val DEFAULT_ORDER = Order.ascendingBy("id")
+		val DEFAULT_ORDER = ascendingBy("id")
 	}
 
-	val main: Main get() = manager.getData<Main>("main")
+	val main: Main get() = data("main")
 
-	fun getAll(order: Order? = null): List<T> = selectAll(order ?: DEFAULT_ORDER)
-	fun getAllIds(order: Order? = null): List<String> = manager.driver.withHandleUnchecked {
-		it.createQuery("select id from $name ${(order ?: DEFAULT_ORDER).format()}")
-			.mapTo(String::class.java)
-			.list()
-	}
+	fun getAll(order: Order? = null, offset: Int? = null, limit: Int? = null): List<T> = select(order = order ?: DEFAULT_ORDER, offset = offset, limit = limit).list()
+	fun getAllIds(order: Order? = null): Set<String> = selectValue(property<String>(Identifiable::id), order = order).list().toSet()
 
-	fun getByIds(ids: Collection<Any>, order: Order? = null, where: Where? = null): List<T> = selectMany(Where.valueContainsField("id", ids).and(where ?: Where.empty()), order ?: DEFAULT_ORDER)
-	fun getById(id: String): T? = selectOne(Where.equals("id", id)).orElse(null)
-	fun delete(id: String): Boolean = delete(Where.equals("id", id)) > 0
+	fun getByIds(ids: Set<String>, where: Where? = null, order: Order? = null, offset: Int? = null, limit: Int? = null): List<T> = select(
+		where = (value(ids) contains property(Identifiable::id)) and (where ?: Where.EMPTY),
+		order = order ?: DEFAULT_ORDER,
+		offset = offset,
+		limit = limit
+	).list()
+
+	@Select fun getById(@Condition id: String): T?
+	@Delete fun delete(@Condition id: String): Boolean = execute() //Default implementation is required because of compiler errors in inheritors otherwise
 }

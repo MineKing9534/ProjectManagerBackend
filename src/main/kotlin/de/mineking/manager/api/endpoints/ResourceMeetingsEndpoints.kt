@@ -20,7 +20,7 @@ fun ResourceMeetingsEndpoints() {
 			val type = attribute<ResourceType>("type")!!
 			val resource = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
 
-			if (!auth.user.admin && !resource.canBeAccessed(auth.user.id.asString())) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+			if (!auth.user().admin && !resource.canBeAccessed(auth.user().id.asString())) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
 
 			attribute("resource", resource)
 		}
@@ -29,8 +29,7 @@ fun ResourceMeetingsEndpoints() {
 	get {
 		with(it) {
 			val resource = attribute<MeetingResource>("resource")!!
-
-			paginateResult(resource.getMeetingCount(), resource::getMeetings, MeetingTable.DEFAULT_ORDER)
+			paginateResult(resource.getMeetingCount(), { order, offset, limit -> resource.getMeetings(order, offset, limit).list() }, MeetingTable.DEFAULT_ORDER)
 		}
 	}
 
@@ -51,7 +50,7 @@ fun ResourceMeetingsEndpoints() {
 				location = request.location
 			)
 
-			main.participants.join(auth.user.id, meeting.id, ResourceType.MEETING)
+			main.participants.join(auth.user().id, meeting.id, ResourceType.MEETING)
 
 			main.email.sendEmail(
 				EmailType.MEETING_CREATE, main.participants.getParticipantUsers(resource), arrayOf(

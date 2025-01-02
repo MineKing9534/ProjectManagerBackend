@@ -1,9 +1,6 @@
 package de.mineking.manager.data
 
-import de.mineking.databaseutils.Column
-import de.mineking.databaseutils.DataClass
-import de.mineking.databaseutils.Order
-import de.mineking.databaseutils.Where
+import de.mineking.database.*
 import de.mineking.javautils.ID
 import de.mineking.manager.main.DEFAULT_ID
 import de.mineking.manager.main.Main
@@ -11,20 +8,27 @@ import java.time.Instant
 
 data class Project(
 	@Transient override val main: Main,
-	@Column(key = true) override val id: ID = DEFAULT_ID,
-	@Column(unique = true) override val name: String = "",
+	@Key @Column override val id: ID = DEFAULT_ID,
+	@Unique @Column override val name: String = "",
 	@Column override val parent: String = ""
-) : DataClass<Project>, Identifiable, MeetingResource, Comparable<Project> {
+) : DataObject<Project>, Identifiable, MeetingResource, Comparable<Project> {
 	override val resourceType = ResourceType.PROJECT
-	override fun getTable() = main.projects
+	@Transient override val table = main.projects
 
 	override fun compareTo(other: Project): Int = name.compareTo(other.name)
 }
 
 interface ProjectTable : ResourceTable<Project> {
-	fun create(name: String, parent: Resource? = null, location: String, time: Instant): Project {
-		val project = insert(Project(main, name = name, parent = if(parent == null) "" else "${ parent.resourceType }:${ parent.id.asString() }"))
-		main.meetings.insert(Meeting(main = main, id = project.id,
+	fun create(name: String, parent: Resource? = null, location: String, time: Instant): UpdateResult<Project> {
+		val result = insert(Project(main, name = name, parent =
+			if(parent == null) ""
+			else "${ parent.resourceType }:${ parent.id.asString() }")
+		)
+
+		val project = result.value ?: return result
+
+		main.meetings.insert(Meeting(main = main,
+			id = project.id,
 			parent = "PROJECT:${ project.id.asString() }",
 			name = project.name,
 			type = MeetingType.EVENT,
@@ -32,17 +36,22 @@ interface ProjectTable : ResourceTable<Project> {
 			time = time
 		))
 
-		return project
+		return result
 	}
 
-	fun getProjects(parent: Resource, order: Order? = null) = selectMany(Where.equals("parent", "${ parent.resourceType }:${ parent.id.asString() }"), order ?: ResourceTable.DEFAULT_ORDER)
-	fun getProjectCount(parent: Resource) = getRowCount(Where.equals("parent", "${ parent.resourceType }:${ parent.id.asString() }"))
+	fun getProjectCount(parent: Resource) = selectRowCount(where = property(Project::parent) isEqualTo value("${ parent.resourceType }:${ parent.id.asString() }"))
+	fun getProjects(parent: Resource, order: Order? = null, offset: Int? = null, limit: Int? = null) = select(
+		where = property(Project::parent) isEqualTo value("${ parent.resourceType }:${ parent.id.asString() }"),
+		order = order ?: ResourceTable.DEFAULT_ORDER,
+		offset = offset,
+		limit = limit
+	)
 
 	override fun delete(id: String): Boolean {
 		val result = super.delete(id)
 
 		if (result) {
-			main.meetings.selectMany(Where.equals("parent", "PROJECT:$id")).forEach { main.meetings.delete(it.id.asString()) }
+			main.meetings.selectValue(property(Meeting::id), where = property(Meeting::parent) isEqualTo value("PROJECT:$id")).stream().forEach { main.meetings.delete(it.asString()) }
 		}
 
 		return result

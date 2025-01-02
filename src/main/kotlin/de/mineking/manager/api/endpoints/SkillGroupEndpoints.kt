@@ -1,6 +1,5 @@
 package de.mineking.manager.api.endpoints
 
-import de.mineking.databaseutils.exception.ConflictException
 import de.mineking.manager.api.checkAuthorization
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
@@ -25,11 +24,11 @@ fun SkillGroupEndpoints() {
 
 			val request = bodyAsClass<Request>()
 
-			try {
-				json(main.skillGroups.create(request.name))
-			} catch (_: ConflictException) {
-				throw ErrorResponse(ErrorResponseType.SKILL_GROUP_ALREADY_EXISTS)
-			}
+			val result = main.skillGroups.create(request.name)
+
+			if (result.uniqueViolation) throw ErrorResponse(ErrorResponseType.SKILL_GROUP_ALREADY_EXISTS)
+			json(result.getOrThrow())
+
 		}
 	}
 
@@ -58,11 +57,10 @@ fun SkillGroupEndpoints() {
 
 				val group = main.skillGroups.getById(pathParam("id")) ?: throw ErrorResponse(ErrorResponseType.SKILL_GROUP_NOT_FOUND)
 
-				try {
-					json(group.copy(name = request.name).update())
-				} catch (_: ConflictException) {
-					throw ErrorResponse(ErrorResponseType.SKILL_GROUP_ALREADY_EXISTS)
-				}
+				val result = group.copy(name = request.name).update()
+
+				if (result.uniqueViolation) throw ErrorResponse(ErrorResponseType.SKILL_GROUP_ALREADY_EXISTS)
+				json(result.getOrThrow())
 			}
 		}
 	}

@@ -1,10 +1,6 @@
 package de.mineking.manager.data
 
-import de.mineking.databaseutils.Column
-import de.mineking.databaseutils.DataClass
-import de.mineking.databaseutils.Table
-import de.mineking.databaseutils.Where
-import de.mineking.databaseutils.exception.ConflictException
+import de.mineking.database.*
 import de.mineking.javautils.ID
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
@@ -14,11 +10,11 @@ import org.jdbi.v3.core.kotlin.withHandleUnchecked
 
 data class Participant(
 	@Transient val main: Main,
-	@Column(key = true) val user: ID = DEFAULT_ID,
-	@Column(key = true) val parent: ID = DEFAULT_ID,
+	@Key @Column val user: ID = DEFAULT_ID,
+	@Key @Column val parent: ID = DEFAULT_ID,
 	@Column val parentType: ResourceType = ResourceType.TEAM
-) : DataClass<Participant> {
-	override fun getTable() = main.participants
+) : DataObject<Participant> {
+	@Transient override val table = main.participants
 }
 
 data class ParticipantInfo(
@@ -27,53 +23,24 @@ data class ParticipantInfo(
 )
 
 interface ParticipantTable : Table<Participant> {
-	val main: Main get() = manager.getData<Main>("main")
+	val main: Main get() = structure.manager.data["main"] as Main
 
-	@Throws(ErrorResponse::class)
-	fun join(user: ID, parent: ID, parentType: ResourceType) {
+	@Insert
+	fun join(@Parameter user: ID, @Parameter parent: ID, @Parameter parentType: ResourceType) {
 		if (user == parent) throw ErrorResponse(ErrorResponseType.ALREADY_PARTICIPATING)
 
-		try {
-			insert(Participant(main, user, parent, parentType))
-		} catch (_: ConflictException) {
-			throw ErrorResponse(ErrorResponseType.ALREADY_PARTICIPATING)
-		}
+		if (execute<UpdateResult<Participant>>().uniqueViolation) throw ErrorResponse(ErrorResponseType.ALREADY_PARTICIPATING)
 	}
 
-	fun leave(user: ID, parent: ID): Boolean = delete(
-		Where.allOf(
-			Where.equals("user", user),
-			Where.equals("parent", parent)
-		)
-	) > 0
+	@Delete fun leave(@Condition user: ID, @Condition parent: ID): Boolean
+	@Select fun get(@Condition user: ID, @Condition parent: ID): Participant?
 
-	fun get(user: ID, resource: ID): Participant? = selectOne(
-		Where.allOf(
-			Where.equals("user", user),
-			Where.equals("parent", resource)
-		)
-	).orElse(null)
+	fun getParents(user: ID, parentType: ResourceType) = getParents(user, property(Participant::parentType) isEqualTo value(parentType))
+	fun getParents(user: ID, where: Where): Set<String> = selectValue(property<String>(Participant::parent), where = property(Participant::user) isEqualTo value(user) and where).list().toSet()
 
-	fun getParents(user: ID, parentType: ResourceType) = getParents(user, Where.equals("parenttype", parentType))
+	@SelectValue("user") fun getDirectParticipants(@Condition parent: ID): Set<String>
 
-	fun getParents(user: ID, where: Where): Collection<String> = manager.driver.withHandleUnchecked {
-		val condition = where.and(Where.equals("user", user))
-
-		it.createQuery("select parent from $name <where>")
-			.define("where", condition.format())
-			.bindMap(condition.formatValues(this))
-			.mapTo(String::class.java)
-			.set()
-	}
-
-	fun getDirectParticipants(parent: ID): Collection<String> = manager.driver.withHandleUnchecked {
-		it.createQuery("select \"user\" from $name where parent = :parent")
-			.bind("parent", parent.asString())
-			.mapTo(String::class.java)
-			.set()
-	}
-
-	fun getParticipantUsers(parent: Resource, recursive: Boolean = true): Collection<String> {
+	fun getParticipantUsers(parent: Resource, recursive: Boolean = true): Set<String> {
 		val result = mutableSetOf<String>()
 		getParticipantUsers(result, parent, recursive)
 

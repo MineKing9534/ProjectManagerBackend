@@ -1,29 +1,23 @@
 package de.mineking.manager.data
 
-import de.mineking.databaseutils.Column
-import de.mineking.databaseutils.DataClass
+import de.mineking.database.*
 import de.mineking.javautils.ID
 import de.mineking.manager.main.DEFAULT_ID
 import de.mineking.manager.main.Main
-import org.jdbi.v3.core.kotlin.useHandleUnchecked
 
 data class Skill(
 	@Transient val main: Main,
-	@Column(key = true) override val id: ID = DEFAULT_ID,
-	@Column(unique = true) val name: String = "",
+	@Key @Column override val id: ID = DEFAULT_ID,
+	@Unique @Column val name: String = "",
 	@Column val group: String = ""
-) : DataClass<Skill>, Identifiable {
-	override fun getTable() = main.skills
+) : DataObject<Skill>, Identifiable {
+	@Transient override val table = main.skills
 }
 
 interface SkillTable : IdentifiableTable<Skill> {
-	fun create(name: String, group: String): Skill = insert(Skill(main, name = name, group = group))
+	@Insert fun create(@Parameter name: String, @Parameter group: String): UpdateResult<Skill>
 	override fun delete(id: String): Boolean {
-		manager.driver.useHandleUnchecked {
-			it.createUpdate("update users set skills = array_remove(skills, :id)")
-				.bind("id", id)
-				.execute()
-		}
+		main.users.update(property(User::skills) to "array_remove"(property(User::skills), value(id)))
 		return super.delete(id)
 	}
 }

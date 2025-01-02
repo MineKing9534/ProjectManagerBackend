@@ -1,6 +1,6 @@
 package de.mineking.manager.api
 
-import de.mineking.databaseutils.Order
+import de.mineking.database.Order
 import de.mineking.manager.data.Identifiable
 import io.javalin.http.Context
 
@@ -13,7 +13,7 @@ data class PaginationResult(
 	val data: Collection<Any>
 )
 
-private fun Context.paginateResult(total: Int, elements: (Int, Int) -> Collection<Any>) {
+private fun Context.paginateResult(total: Int, elements: (page: Int, entriesPerPage: Int) -> Collection<Any>) {
 	val entriesPerPage = queryParamAsClass("entriesPerPage", Int::class.java).getOrDefault(ENTRIES_PER_PAGE)
 
 	val totalPages = ((total - 1) / entriesPerPage) + 1
@@ -28,13 +28,13 @@ private fun Context.paginateResult(total: Int, elements: (Int, Int) -> Collectio
 			page,
 			totalPages,
 			total,
-			elements.invoke(page, entriesPerPage)
+			elements(page, entriesPerPage)
 		)
 	)
 }
 
-fun Context.paginateResult(total: Int, getter: (order: Order) -> Collection<Any>, order: Order? = null) = paginateResult(total) { page, entriesPerPage ->
-	getter((order ?: Order.empty()).offset((page - 1) * entriesPerPage).limit(entriesPerPage))
+fun Context.paginateResult(total: Int, getter: (order: Order, offset: Int, limit: Int) -> Collection<Any>, order: Order? = null) = paginateResult(total) { page, entriesPerPage ->
+	getter(order ?: Order { "" }, (page - 1) * entriesPerPage, entriesPerPage)
 }
 
 fun <T> Context.paginateResult(elements: Collection<T>) where T : Comparable<T>, T : Identifiable = paginateResult(elements.size) { page, entriesPerPage ->

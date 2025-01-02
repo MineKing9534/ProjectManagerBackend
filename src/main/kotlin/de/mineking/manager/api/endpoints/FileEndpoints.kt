@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets
 import kotlin.io.path.getAttribute
 import kotlin.io.path.setAttribute
 
-
 fun FileEndpoints() {
 	before {
 		with(it) {
@@ -33,7 +32,7 @@ fun FileEndpoints() {
 			val type = attribute<ResourceType>("type")!!
 			val resource = type.table(main).getById(id) ?: throw ErrorResponse(type.error)
 
-			if (!auth.user.admin && !resource.canBeAccessed(auth.user.id.asString())) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+			if (!auth.user().admin && !resource.canBeAccessed(auth.user().id.asString())) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
 
 			attribute("resource", resource)
 

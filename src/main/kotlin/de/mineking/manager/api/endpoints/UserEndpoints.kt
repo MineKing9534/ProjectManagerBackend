@@ -1,10 +1,12 @@
 package de.mineking.manager.api.endpoints
 
-import de.mineking.databaseutils.exception.ConflictException
+import de.mineking.database.property
+import de.mineking.database.value
 import de.mineking.manager.api.*
 import de.mineking.manager.api.error.ErrorResponse
 import de.mineking.manager.api.error.ErrorResponseType
 import de.mineking.manager.data.ResourceType
+import de.mineking.manager.data.User
 import de.mineking.manager.data.UserTable
 import de.mineking.manager.main.EmailType
 import de.mineking.manager.main.containsAny
@@ -23,10 +25,10 @@ fun UserEndpoints() {
 
 			val skills = queryParam("skills")?.split(",")?.toList()
 
-			if (skills.isNullOrEmpty()) paginateResult(main.users.rowCount, main.users::getAll, UserTable.DEFAULT_ORDER)
+			if (skills.isNullOrEmpty()) paginateResult(main.users.selectRowCount(), { order, offset, limit -> main.users.getAll(order = order, offset = offset, limit = limit) }, UserTable.DEFAULT_ORDER)
 			else {
-				val condition = containsAny("skills", skills)
-				paginateResult(main.users.getRowCount(condition), { main.users.selectMany(condition, it) }, UserTable.DEFAULT_ORDER)
+				val condition = property(User::skills) containsAny value(skills)
+				paginateResult(main.users.selectRowCount(condition), { order, offset, limit -> main.users.select(where = condition, order = order, offset = offset, limit = limit).list() }, UserTable.DEFAULT_ORDER)
 			}
 		}
 	}
@@ -73,11 +75,10 @@ fun UserEndpoints() {
 
 			val request = bodyAsClass<Request>()
 
-			try {
-				json(main.users.create(request.firstName, request.lastName, request.email, hashPassword(request.password)))
-			} catch (_: ConflictException) {
-				throw ErrorResponse(ErrorResponseType.USER_ALREADY_EXISTS)
-			}
+			val result = main.users.create(request.firstName, request.lastName, request.email, hashPassword(request.password))
+			if (result.uniqueViolation) throw ErrorResponse(ErrorResponseType.USER_ALREADY_EXISTS)
+
+			json(result.getOrThrow())
 		}
 	}
 
@@ -88,19 +89,20 @@ fun UserEndpoints() {
 			val request = bodyAsClass<UpdateRequest>()
 
 			val auth = checkAuthorization()
-			val user = auth.user
+			val user = auth.user()
 
 			if (request.firstName != null && !request.firstName.isValidName()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
 			if (request.lastName != null && !request.lastName.isValidName()) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
 			if (request.emailTypes != null && !request.emailTypes.all { it.custom }) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
 
-			json(
-				user.copy(
-					firstName = request.firstName ?: user.firstName,
-					lastName = request.lastName ?: user.lastName,
-					emailTypes = request.emailTypes ?: user.emailTypes
-				).update()
-			)
+			val result = user.copy(
+				firstName = request.firstName ?: user.firstName,
+				lastName = request.lastName ?: user.lastName,
+				emailTypes = request.emailTypes ?: user.emailTypes
+			).update()
+
+			if (result.uniqueViolation) throw ErrorResponse(ErrorResponseType.USER_ALREADY_EXISTS)
+			json(result.getOrThrow())
 		}
 	}
 
@@ -110,7 +112,7 @@ fun UserEndpoints() {
 
 			val auth = checkAuthorization()
 
-			val token = main.authenticator.generatePasswordResetToken(auth.user.id.asString())
+			val token = main.authenticator.generatePasswordResetToken(auth.user().id.asString())
 
 			json(Response(token))
 		}
@@ -149,11 +151,11 @@ fun UserEndpoints() {
 
 					request.values.forEach { (id, value) ->
 						val input = main.inputs.getById(id) ?: throw ErrorResponse(ErrorResponseType.INPUT_NOT_FOUND)
-						if (!input.type.validate(value, input.config)) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
+						if (!input.type.validate(value, input)) throw ErrorResponse(ErrorResponseType.INVALID_REQUEST)
 					}
 
 					user.inputs.putAll(request.values)
-					user.inputs.keys.retainAll(main.inputs.getAll().map { it.id.asString() }.toSet())
+					user.inputs.keys.retainAll(main.inputs.getAllIds())
 
 					user.update()
 
@@ -172,7 +174,7 @@ fun UserEndpoints() {
 
 			put {
 				with(it) {
-					data class Request(val skills: List<String>)
+					data class Request(val skills: Set<String>)
 
 					val request = bodyAsClass<Request>()
 
@@ -222,10 +224,10 @@ fun UserEndpoints() {
 				val user = getTarget(main.users, ErrorResponseType.USER_NOT_FOUND)
 
 				val teams = main.teams.getUserTeams(user.id)
-				val teamMeetings = teams.flatMap { it.getMeetings() }
+				val teamMeetings = teams.flatMap { it.getMeetings().list() }
 
-				val projects = teams.flatMap { it.getProjects() }.map { it.id.asString() } + main.participants.getParents(user.id, ResourceType.PROJECT)
-				val projectMeetings = projects.flatMap { main.meetings.getMeetings(it, ResourceType.PROJECT) }
+				val projects = teams.flatMap { it.getProjects().list() }.map { it.id.asString() } + main.participants.getParents(user.id, ResourceType.PROJECT)
+				val projectMeetings = projects.flatMap { main.meetings.getMeetings(it, ResourceType.PROJECT).list() }
 
 				val meetings = main.participants.getParents(user.id, ResourceType.MEETING)
 
@@ -238,7 +240,7 @@ fun UserEndpoints() {
 				val user = getTarget(main.users, ErrorResponseType.USER_NOT_FOUND)
 
 				val teams = main.teams.getUserTeams(user.id)
-				val teamProjects = teams.flatMap { it.getProjects() }
+				val teamProjects = teams.flatMap { it.getProjects().list() }
 
 				val projects = main.participants.getParents(user.id, ResourceType.PROJECT)
 

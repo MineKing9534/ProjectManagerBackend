@@ -10,16 +10,16 @@ version = "2.0.0"
 
 repositories {
     mavenCentral()
-
-	maven { url = uri("https://maven.mineking.dev/releases") }
-	maven { url = uri("https://maven.mineking.dev/snapshots") }
+	maven("https://maven.mineking.dev/releases")
+	maven("https://maven.mineking.dev/snapshots")
 }
 
 dependencies {
 	implementation("de.mineking:JavaUtils:1.9.0")
-	implementation("de.mineking:DatabaseUtils:1.5.0")
+	implementation("de.mineking.KORMite:KORMite-core:master")
+	implementation("de.mineking.KORMite:KORMite-postgres:master")
 
-	implementation("io.javalin:javalin:6.3.0")
+	implementation("io.javalin:javalin:6.4.0")
 	implementation("org.simplejavamail:simple-java-mail:8.10.1")
 
 	implementation("com.auth0:java-jwt:4.4.0")
@@ -30,7 +30,7 @@ dependencies {
 	implementation("commons-io:commons-io:2.16.1")
 	implementation("org.apache.tika:tika-core:2.9.2")
 
-	implementation("ch.qos.logback:logback-classic:1.5.6")
+	implementation("ch.qos.logback:logback-classic:1.5.15")
 
 	implementation("org.postgresql:postgresql:42.7.3")
 	implementation("org.jdbi:jdbi3-postgres:3.45.1")
@@ -45,9 +45,9 @@ tasks.test {
 }
 
 kotlin {
-	jvmToolchain(17)
+	jvmToolchain(21)
 	compilerOptions {
-		freeCompilerArgs.add("-Xjvm-default=all")
+		javaParameters = true
 	}
 }
 

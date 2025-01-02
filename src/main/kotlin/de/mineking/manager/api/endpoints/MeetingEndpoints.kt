@@ -18,7 +18,7 @@ fun MeetingEndpoints() {
 		with(it) {
 			checkAuthorization(admin = true)
 
-			paginateResult(main.meetings.rowCount, main.meetings::getAll, MeetingTable.DEFAULT_ORDER)
+			paginateResult(main.meetings.selectRowCount(), main.meetings::getAll, MeetingTable.DEFAULT_ORDER)
 		}
 	}
 
@@ -39,7 +39,7 @@ fun MeetingEndpoints() {
 				val id = pathParam("id")
 				val meeting = main.meetings.getById(id) ?: throw ErrorResponse(ErrorResponseType.MEETING_NOT_FOUND)
 
-				if (!auth.user.admin && !meeting.canBeAccessed(auth.user.id.asString())) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
+				if (!auth.user().admin && !meeting.canBeAccessed(auth.user().id.asString())) throw ErrorResponse(ErrorResponseType.MISSING_ACCESS)
 
 				json(meeting)
 			}
@@ -86,14 +86,15 @@ fun MeetingEndpoints() {
 					)
 				)
 
-				json(
-					meeting.copy(
-						name = request.name ?: meeting.name,
-						location = request.location ?: meeting.location,
-						time = request.time ?: meeting.time,
-						type = request.type ?: meeting.type
-					).update()
-				)
+				val result = meeting.copy(
+					name = request.name ?: meeting.name,
+					location = request.location ?: meeting.location,
+					time = request.time ?: meeting.time,
+					type = request.type ?: meeting.type
+				).update()
+
+				if (result.uniqueViolation) throw ErrorResponse(ErrorResponseType.MEETING_ALREADY_EXISTS)
+				json(result.getOrThrow())
 			}
 		}
 
